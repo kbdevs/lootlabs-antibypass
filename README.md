@@ -1,6 +1,6 @@
 # LootLabs Anti-Bypass Redirector
 
-This Cloudflare Worker script ensures that users cannot bypass LootLabs content lockers by directly accessing the destination URL. Instead, it dynamically generates a secure, encrypted LootLabs link.
+This Cloudflare Worker ensures that users cannot bypass LootLabs content lockers by directly accessing the destination URL. Instead, it dynamically generates a secure, encrypted LootLabs link.
 
 ## How It Works
 - The script listens for incoming requests.
