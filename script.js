@@ -1,3 +1,7 @@
+// created by kbdevs
+// created by kbdevs
+// created by kbdevs
+
 addEventListener("fetch", event => {
   event.respondWith(handleRequest(event.request))
 })
@@ -49,3 +53,7 @@ async function handleRequest(request) {
     return Response.redirect("https://google.com", 302)
   }
 }
+
+// created by kbdevs
+// created by kbdevs
+// created by kbdevs
