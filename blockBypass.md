@@ -42,7 +42,7 @@ This Cloudflare Worker prevents unauthorized bypass of LootLabs content lockers 
 If your deployed Worker URL is `https://yourworker.workers.dev/`, a typical request would be:
 
 ```
-https://yourworker.workers.dev/?url=yourEncodedURL
+https://yourworker.workers.dev/?url=yourEncodedURL?antibypass=iadaoij
 ```
 
 #### The `yourEncodedURL` is the base64 encoded version of the final url.

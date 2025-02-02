@@ -1,5 +1,7 @@
 # LootLabs Anti-Bypass Project
 
+> TL;DR: This project blocks all attempts to bypass LootLabs content lockers through a secure Cloudflare Workers implementation.
+
 This project contains Cloudflare Workers to secure and obfuscate destination URLs by dynamically generating encrypted links through the LootLabs API.
 
 ## Overview
@@ -15,5 +17,3 @@ This project contains Cloudflare Workers to secure and obfuscate destination URL
 - **redirectAPI.js / redirectAPI.md**: Handles URL redirection using encryption.
 - **blockBypass.js / blockBypass.md**: Ensures requests come from approved referrers.
 
-## Support
-For setup help or support, please reach out via the provided contact methods in the project documentation.
