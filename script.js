@@ -3,54 +3,46 @@
 // created by kbdevs
 
 addEventListener("fetch", event => {
-  event.respondWith(handleRequest(event.request))
-})
+  event.respondWith(handleRequest(event.request));
+});
 
 async function handleRequest(request) {
-  const url = new URL(request.url)
+  const url = new URL(request.url);
+  const targetKey = url.searchParams.get("url");
 
-  const custom_urls = {
-    "example": {
-      "url": "where i want it to go",
-      "link": "the lootlabs base link for this content locker"
-    },
-    "real": {
-      "url": "https://google.com",
-      "link": "https://loot-link.com/s?idjadaoj"
-    }
+  const customUrls = {
+    example: { url: "where you want it to go", link: "lootlabs base url" },
+    real: { url: "https://google.com", link: "https://loot-link.com/s?idajdoajo" }
+  };
+
+  if (!customUrls[targetKey]) {
+    return Response.redirect("https://google.com", 302);
   }
-  
-  // Extract 'url' parameter from the query string
-  var targetUrl = url.searchParams.get('url')
-  const temp = targetUrl
-  if (custom_urls[temp]) {
-    targetUrl = custom_urls[temp]["url"] + "?antibypass=" + ((Math.random() + 1).toString(36).substring(7))
 
-    console.log(targetUrl)
-      // API key for LootLabs API
-    const apiKey = "your lootlabs api key, get it here https://creators.lootlabs.gg/advanced"
+  const baseUrl = customUrls[targetKey].url;
+  const redirectBase = customUrls[targetKey].link;
+  const randomToken = (Math.random() + 1).toString(36).substring(7);
+  const modifiedUrl = `${baseUrl}?antibypass=${randomToken}`;
 
-    // Construct the LootLabs API URL
-    const lootlabsApiUrl = `https://be.lootlabs.gg/api/lootlabs/url_encryptor?destination_url=${encodeURIComponent(targetUrl)}&api_token=${apiKey}`
+  // console.log("Modified Target URL:", modifiedUrl);
 
-    try {
-      // Fetch response from the API
-      const response = await fetch(lootlabsApiUrl)
-      const result = await response.json()
+  const apiKey = "your lootlabs api key";
+  const lootlabsApiUrl = `https://be.lootlabs.gg/api/lootlabs/url_encryptor?destination_url=${encodeURIComponent(modifiedUrl)}&api_token=${apiKey}`;
 
-      if (!response.ok || !result.message) {
-        return new Response(`Error from LootLabs API: ${result.message || "Unknown error"}`, { status: 500 })
-      }
+  try {
+    const response = await fetch(lootlabsApiUrl);
+    const result = await response.json();
 
-      var redirectUrl = (custom_urls[temp]["link"] + "&data=" + result.message)
-      console.log(redirectUrl)
-  
-      return Response.redirect(redirectUrl, 302)
-    } catch (error) {
-      return new Response(`An error occurred: ${error.message}`, { status: 500 })
+    if (!response.ok || !result.message) {
+      return new Response(`LootLabs API Error: ${result.message || "Unknown error"}`, { status: 500 });
     }
-  } else {
-    return Response.redirect("https://google.com", 302)
+
+    const finalRedirectUrl = `${redirectBase}&data=${result.message}`;
+    // console.log("Final Redirect URL:", finalRedirectUrl);
+
+    return Response.redirect(finalRedirectUrl, 302);
+  } catch (error) {
+    return new Response(`An error occurred: ${error.message}`, { status: 500 });
   }
 }
 
