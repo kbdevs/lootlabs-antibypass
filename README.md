@@ -11,10 +11,9 @@ If this setup feels overwhelming, I can help for just $5 in crypto. Ping me in t
 
 This project contains Cloudflare Workers to secure and obfuscate destination URLs by dynamically generating encrypted links through the LootLabs API.
 
-## Overview
-- Prevents users from bypassing content lockers.
-- Encrypts the destination URLs using the LootLabs API.
-- Consists of multiple workers: one for redirecting and one for blocking bypass attempts.
+## How does this work?
+- The Redirect API Worker makes it so that each time a user requests your link it generates a completely new URL so that bypassers take a long time or don't work.
+- The Check Referrer Worker makes sure that the user is coming from lootlabs instead of a bypass site.
 
 ## Setup & Deployment
 1. Deploy the [Redirect API Worker](https://github.com/kbdevs/lootlabs-antibypass/blob/main/redirectAPI.md)
