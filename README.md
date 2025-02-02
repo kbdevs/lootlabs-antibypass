@@ -8,9 +8,9 @@ This project contains Cloudflare Workers to secure and obfuscate destination URL
 - Consists of multiple workers: one for redirecting and one for blocking bypass attempts.
 
 ## Setup & Deployment
-1. Deploy the [Redirect API Worker](https://github.com/kbdevs/lootlabs-antibypass/blob/main/redirectAPI.md)
-2. Deploy the [Referrer Checker](https://github.com/kbdevs/lootlabs-antibypass/blob/main/blockBypass.md)
-
+1. Deploy each worker on Cloudflare Workers.
+2. Configure the `custom_urls` object and update the API key as required.
+3. Test by visiting the worker URL with a valid query parameter, e.g., `?url=real`.
 
 ## Files Included
 - **redirectAPI.js / redirectAPI.md**: Handles URL redirection using encryption.

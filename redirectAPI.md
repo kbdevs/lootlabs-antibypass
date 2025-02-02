@@ -35,7 +35,7 @@ This Cloudflare Worker prevents users from bypassing LootLabs content lockers by
 7. Note the generated Worker URL – you'll need this later.
 8. Click **Deploy**.
 9. In the top right, click **Edit Code**.
-10. Paste in the script: **[script.js](https://raw.githubusercontent.com/kbdevs/lootlabs-antibypass/refs/heads/main/script.js?v=1)**.
+10. Paste in the script: **[redirectAPI.js](https://raw.githubusercontent.com/kbdevs/lootlabs-antibypass/refs/heads/main/redirectAPI.js?v=1)**.
 11. Modify the necessary variables using steps #2 and #3 below.
 
 ### 2️⃣ Configure Your Custom URLs

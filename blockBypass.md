@@ -30,7 +30,7 @@ This Cloudflare Worker prevents unauthorized bypass of LootLabs content lockers 
 3. Click **Create**.
 4. Ensure you're on the **Workers** tab.
 5. Click **Create Worker**, name it (e.g., `blockBypass`), and deploy.
-6. In the Editor, paste the BlockBypass script.
+6. In the Editor, paste the **[blockBypass.js](https://raw.githubusercontent.com/kbdevs/lootlabs-antibypass/refs/heads/main/blockBypass.js?v=1)**.
 
 ### 2️⃣ Test Your Worker
 1. Open your Worker URL with appropriate parameters.
