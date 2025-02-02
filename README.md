@@ -1,6 +1,6 @@
 # LootLabs Anti-Bypass Worker
 
-## If this seems like too much work, I will personally set it up for $5 crypto! (It's worth it)
+## If this seems like too much work, I will personally set it up for $5 crypto (It's worth it!!)
 
 This Cloudflare Worker ensures that users cannot bypass LootLabs content lockers by directly accessing the destination URL. Instead, it dynamically generates a secure, encrypted LootLabs link.
 
@@ -19,7 +19,7 @@ This Cloudflare Worker ensures that users cannot bypass LootLabs content lockers
 ## Setup Instructions
 
 ### 1. Deploy on Cloudflare Workers
-###### If this seems like too much work, I will personally set it up for $5 crypto! (It's worth it)
+###### If this seems like too much work, I will personally set it up for $5 crypto (It's worth it!!)
 1. Log in to your [Cloudflare Dashboard](https://dash.cloudflare.com/).
 2. In the sidebar navigate to **Compute (Workers)**.
 3. Click **Create** at the top.
