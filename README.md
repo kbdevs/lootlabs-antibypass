@@ -1,38 +1,43 @@
 # LootLabs Anti-Bypass Worker
 
-## If this seems like too much work, I will personally set it up for $5 crypto (It's worth it!!)
+## Need Help? I'll Set It Up for $5 in Crypto! 💰
+If this setup feels like too much work, I can personally handle it for just $5 in crypto. It's worth it! Ping me in the LootLabs Discord (@kbdevs) to get started.
 
-This Cloudflare Worker ensures that users cannot bypass LootLabs content lockers by directly accessing the destination URL. Instead, it dynamically generates a secure, encrypted LootLabs link.
+---
 
-## How It Works
-- The script listens for incoming requests.
-- It checks if the requested URL matches one of the predefined `custom_urls`.
-- If a match is found, it appends an `antibypass` parameter to the target URL to prevent caching.
-- The script then calls LootLabs' API to encrypt the new URL.
-- Users are redirected to the encrypted LootLabs link instead of the original destination.
+## What Does This Worker Do? 🔒
+This Cloudflare Worker prevents users from bypassing LootLabs content lockers by directly accessing the destination URL. Instead, it dynamically generates a secure, encrypted LootLabs link.
 
-## Features
-✅ Prevents direct access to the destination URL.<br>
-✅ Uses dynamic URL encryption to make bypassing harder.<br>
-✅ Can be deployed as a Cloudflare Worker for fast performance.<br>
+### 🚀 How It Works
+1. Listens for incoming requests.
+2. Checks if the requested URL matches a predefined `custom_urls` entry.
+3. Appends an `antibypass` parameter to the target URL to prevent caching.
+4. Calls the LootLabs API to encrypt the new URL.
+5. Redirects users to the encrypted LootLabs link instead of the original destination.
 
-## Setup Instructions
+### 🔥 Key Features
+✅ Obfuscates the destination URL.<br>
+✅ Uses dynamic URL encryption to enhance security.<br>
+✅ Deploys as a Cloudflare Worker for ultra-fast performance.<br>
 
-### 1. Deploy on Cloudflare Workers
-###### If this seems like too much work, I will personally set it up for $5 crypto (It's worth it!!)
+---
+
+## 📌 Setup Guide
+
+### 1️⃣ Deploy on Cloudflare Workers
 1. Log in to your [Cloudflare Dashboard](https://dash.cloudflare.com/).
-2. In the sidebar navigate to **Compute (Workers)**.
+2. Navigate to **Compute (Workers)** in the sidebar.
 3. Click **Create** at the top.
-4. Make sure you are on the workers tab (not the pages tab)
-5. Click **Create worker**
-6. Set the name of the worker to something memorable (ex. lootlabsapi)
-7. Note down the URL shown under the entry field, it is important for later!
-8. Click **Deploy**
-9. In the top right click **Edit Code**
-10. Paste in the **[script.js](https://raw.githubusercontent.com/kbdevs/lootlabs-antibypass/refs/heads/main/script.js?v=1)**
-11. Edit the variables with steps #2 & #3
+4. Ensure you're on the **Workers** tab (not Pages).
+5. Click **Create Worker**.
+6. Name the worker (e.g., `lootlabsapi`).
+7. Note the generated Worker URL – you'll need this later.
+8. Click **Deploy**.
+9. In the top right, click **Edit Code**.
+10. Paste in the script: **[script.js](https://raw.githubusercontent.com/kbdevs/lootlabs-antibypass/refs/heads/main/script.js?v=1)**.
+11. Modify the necessary variables using steps #2 and #3 below.
 
-### 2. Configure Your Custom URLs
+### 2️⃣ Configure Your Custom URLs
 Edit the `custom_urls` object in the script:
 
 ```javascript
@@ -47,49 +52,55 @@ const custom_urls = {
   }
 }
 ```
-- **Key** (`example`, `real`) is the identifier used in the `url` query parameter.
-- **url** is the final destination where users should be redirected **after** unlocking the content.
+
+- **Key** (`example`, `real`) is used as an identifier in the `url` query parameter.
+- **url** is the final destination after unlocking the content.
 - **link** is the base LootLabs content locker link.
 
-### 3. Get Your LootLabs API Key
-- Sign up or log in to [LootLabs](https://creators.lootlabs.gg/advanced).
-- Navigate to the API settings and copy your API key.
-- Replace `your lootlabs api key` in the script with your actual key.
+### 3️⃣ Get Your LootLabs API Key
+1. Go to [LootLabs Advanced Settings](https://creators.lootlabs.gg/advanced).
+2. Copy your API key.
+3. Replace `your lootlabs api key` in the script with your actual key.
 
-### 4. Test Your Worker
-- Visit `https://your-worker-url/?url=one of your items`.
-- You should be redirected to the LootLabs content locker with a dynamically generated encrypted link.
+### 4️⃣ Test Your Worker
+1. Open `https://your-worker-url/?url=one-of-your-items` in a browser.
+2. If everything is set up correctly, you'll be redirected to the encrypted LootLabs content locker link.
 
-## Example Usage
-Assuming your Worker is deployed at `https://yourworker.workers.dev/`, a valid request would look like:
+---
+
+## 🛠 Example Usage
+If your Worker is deployed at `https://yourworker.workers.dev/`, a valid request would be:
 
 ```
 https://yourworker.workers.dev/?url=real
 ```
-This will:
-1. Generate a new encrypted LootLabs link.
-2. Redirect the user to it instead of the original URL.
 
-## Notes
+🔹 This generates an encrypted LootLabs link and redirects the user securely.
+
+### ❗ Important Notes
 - If an invalid `url` parameter is provided, users are redirected to Google by default.
-- Always keep your API key secure.
+- Keep your API key **secure** at all times.
 
-## Donate 💰  
-If you appreciate this worker and want to support me, you can send donations to the following addresses:  
+---
+
+## ❤️ Support & Donations
+If you find this worker useful and want to support me, consider donating:
+
+### **Crypto Wallets**
 
 **Bitcoin (BTC):**  
-`bc1q5kvxfy2d9ptcjlf3plz5j47g8x06ucym4ulste`  
+`bc1q5kvxfy2d9ptcjlf3plz5j47g8x06ucym4ulste`
 
 **Ethereum (ETH) & USDT (ERC-20) & USDC (ERC-20):**  
-`0xE80Dc00cBf1947282eaC355D5f6daAccB5ee86fF`  
+`0xE80Dc00cBf1947282eaC355D5f6daAccB5ee86fF`
 
 **Litecoin (LTC):**  
-`LSAFBzjE91KkWDbCBB1WZmFbe4U9XYac9L`  
+`LSAFBzjE91KkWDbCBB1WZmFbe4U9XYac9L`
 
 **Monero (XMR):**  
-`42VNEjqQ9qWGoovQ2V7XQfWFkDWhyFWdMQqM5Nv5GK8DBdGJeajZQvi8ypn6NzSVhiLFhiX96LDuxMw6vubVxaYd3JoiXqG`  
+`42VNEjqQ9qWGoovQ2V7XQfWFkDWhyFWdMQqM5Nv5GK8DBdGJeajZQvi8ypn6NzSVhiLFhiX96LDuxMw6vubVxaYd3JoiXqG`
 
 **Solana (SOL):**  
-`3VWTezAw3pjw71uea5UtY3BkGTdVvXZMoTnZJhyLFccP`  
+`3VWTezAw3pjw71uea5UtY3BkGTdVvXZMoTnZJhyLFccP`
 
-Thank you for your support! 😊 
+🙌 Thanks for your support!
