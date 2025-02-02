@@ -54,8 +54,7 @@ const custom_urls = {
 - Replace `your lootlabs api key` in the script with your actual key.
 
 ### 4. Test Your Worker
-- Deploy the script in Cloudflare Workers.
-- Visit `https://your-worker-url/?url=example`.
+- Visit `https://your-worker-url/?url=one of your items`.
 - You should be redirected to the LootLabs content locker with a dynamically generated encrypted link.
 
 ## Example Usage
