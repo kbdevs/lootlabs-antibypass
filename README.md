@@ -1,6 +1,13 @@
 # LootLabs Anti-Bypass Project
 
+
 > TL;DR: This project blocks all attempts to bypass LootLabs content lockers through a secure Cloudflare Workers implementation.
+
+
+## Need Help? I'll Set It Up for $5 in Crypto! 💰
+If this setup feels overwhelming, I can help for just $5 in crypto. Ping me in the LootLabs Discord (@kbdevs) to get started.
+
+---
 
 This project contains Cloudflare Workers to secure and obfuscate destination URLs by dynamically generating encrypted links through the LootLabs API.
 

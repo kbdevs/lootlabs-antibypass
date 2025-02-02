@@ -1,4 +1,4 @@
-# BlockBypass Worker
+# Check Referrer Worker
 ###### From the creator of https://lootlabs.pages.dev.
 
 ## Need Help? I'll Set It Up for $5 in Crypto! 💰
