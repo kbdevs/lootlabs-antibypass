@@ -23,10 +23,11 @@ This Cloudflare Worker script ensures that users cannot bypass LootLabs content 
 4. Make sure you are on the workers tab (not the pages tab)
 5. Click **Create worker**
 6. Set the name of the worker to something memorable (ex. lootlabsapi)
-7. Click **Deploy**
-8. In the top right click **Edit Code**
-9. Paste in the **[script.js](https://raw.githubusercontent.com/kbdevs/lootlabs-antibypass/refs/heads/main/script.js?v=1)**
-10. Edit the variables with steps #2 & #3
+7. Note down the URL shown under the entry field, it is important for later!
+8. Click **Deploy**
+9. In the top right click **Edit Code**
+10. Paste in the **[script.js](https://raw.githubusercontent.com/kbdevs/lootlabs-antibypass/refs/heads/main/script.js?v=1)**
+11. Edit the variables with steps #2 & #3
 
 ### 2. Configure Your Custom URLs
 Edit the `custom_urls` object in the script:
