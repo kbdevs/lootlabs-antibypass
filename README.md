@@ -73,3 +73,23 @@ This will:
 ## Notes
 - If an invalid `url` parameter is provided, users are redirected to Google by default.
 - Always keep your API key secure.
+
+## Donate 💰  
+If you appreciate this worker and want to support me, you can send donations to the following addresses:  
+
+**Bitcoin (BTC):**  
+`bc1q5kvxfy2d9ptcjlf3plz5j47g8x06ucym4ulste`  
+
+**Ethereum (ETH) & USDT (ERC-20) & USDC (ERC-20):**  
+`0xE80Dc00cBf1947282eaC355D5f6daAccB5ee86fF`  
+
+**Litecoin (LTC):**  
+`LSAFBzjE91KkWDbCBB1WZmFbe4U9XYac9L`  
+
+**Monero (XMR):**  
+`42VNEjqQ9qWGoovQ2V7XQfWFkDWhyFWdMQqM5Nv5GK8DBdGJeajZQvi8ypn6NzSVhiLFhiX96LDuxMw6vubVxaYd3JoiXqG`  
+
+**Solana (SOL):**  
+`3VWTezAw3pjw71uea5UtY3BkGTdVvXZMoTnZJhyLFccP`  
+
+Thank you for your support! 😊 
