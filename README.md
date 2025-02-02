@@ -1,4 +1,5 @@
 # LootLabs Anti-Bypass Worker
+###### From the creator of https://lootlabs.pages.dev.
 
 ## Need Help? I'll Set It Up for $5 in Crypto! 💰
 If this setup feels like too much work, I can personally handle it for just $5 in crypto. It's worth it! Ping me in the LootLabs Discord (@kbdevs) to get started.
