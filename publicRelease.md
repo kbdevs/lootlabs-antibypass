@@ -6,14 +6,18 @@ If this setup feels overwhelming, I can help for just $5 in crypto. Ping me in t
 
 ---
 
+# Demo Site
+You can visit a demo of this at https://lootlabs.folate-lathe-0d.workers.dev/.
+
 ## What Does This Worker Do? 🔒
 This Cloudflare Worker allows to create "gateway" URLs to your destination to prevent any unauthorized bypasses of LootLabs content lockers by checking the `Referer` header. Only requests from approved domains are allowed, and any untrusted request is redirected to a safe URL.
 
 ### 🚀 How It Works
-1. Listens for incoming requests.
-2. Checks the `Referer` header against a list of allowed domains.
-3. If the request originates from an untrusted source, responds with a redirect or informative page.
-4. For valid requests, decodes the destination URL and redirects the user accordingly.
+1. You create a gateway link for your destination using this site, you set that as the destination in lootlabs.
+2. The worker listens for incoming requests.
+3. Checks the `Referer` header against a list of allowed domains.
+4. If the request originates from an untrusted source, responds with a redirect or informative page.
+5. For valid requests, decodes the destination URL and redirects the user accordingly.
 
 ### 🔥 Key Features
 ✅ Prevents bypass attempts by validating referrers.<br>
