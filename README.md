@@ -16,10 +16,15 @@ This project contains Cloudflare Workers to secure and obfuscate destination URL
 - The Check Referrer Worker makes sure that the user is coming from lootlabs instead of a bypass site.
 
 ## Setup & Deployment
-1. Deploy the [Redirect API Worker](https://github.com/kbdevs/lootlabs-antibypass/blob/main/redirectAPI.md)
-2. Deploy the [Check Referrer Worker](https://github.com/kbdevs/lootlabs-antibypass/blob/main/blockBypass.md)
+
+1. Deploy the [Block Bypass Worker](https://github.com/kbdevs/lootlabs-antibypass/blob/main/publicRelease.md)
+###### This is optional and slightly more secure
+2. Deploy the [Redirect API Worker](https://github.com/kbdevs/lootlabs-antibypass/blob/main/redirectAPI.md)
+3. Deploy the [Check Referrer Worker](https://github.com/kbdevs/lootlabs-antibypass/blob/main/blockBypass.md)
+
 
 ## Files Included
 - **redirectAPI.js / redirectAPI.md**: Handles URL redirection using encryption.
 - **blockBypass.js / blockBypass.md**: Ensures requests come from approved referrers.
+- **publicRelease.js / publicRelease.md**: A publicaly available method to reduce bypasses.
 

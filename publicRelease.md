@@ -7,7 +7,7 @@ If this setup feels overwhelming, I can help for just $5 in crypto. Ping me in t
 ---
 
 ## What Does This Worker Do? 🔒
-This Cloudflare Worker prevents unauthorized bypass of LootLabs content lockers by checking the `Referer` header. Only requests from approved domains are allowed, and any untrusted request is redirected to a safe URL.
+This Cloudflare Worker allows to create "gateway" URLs to your destination to prevent any unauthorized bypasses of LootLabs content lockers by checking the `Referer` header. Only requests from approved domains are allowed, and any untrusted request is redirected to a safe URL.
 
 ### 🚀 How It Works
 1. Listens for incoming requests.
@@ -29,8 +29,8 @@ This Cloudflare Worker prevents unauthorized bypass of LootLabs content lockers 
 2. Navigate to **Compute (Workers)**.
 3. Click **Create**.
 4. Ensure you're on the **Workers** tab.
-5. Click **Create Worker**, name it (e.g., `blockBypass`), and deploy.
-6. In the Editor, paste the **[blockBypass.js](https://raw.githubusercontent.com/kbdevs/lootlabs-antibypass/refs/heads/main/blockBypass.js?v=1)**.
+5. Click **Create Worker**, name it (e.g., `publicRelease`), and deploy.
+6. In the Editor, paste the **[publicRelease.js](https://raw.githubusercontent.com/kbdevs/lootlabs-antibypass/refs/heads/main/publicRelease.js?v=1)**.
 
 ### 2️⃣ Test Your Worker
 1. Open your Worker URL with appropriate parameters.
@@ -42,15 +42,15 @@ This Cloudflare Worker prevents unauthorized bypass of LootLabs content lockers 
 If your deployed Worker URL is `https://yourworker.workers.dev/`, a typical request would be:
 
 ```
-https://yourworker.workers.dev/?url=yourEncodedURL?antibypass=iadaoij
+https://yourworker.workers.dev/?data=doiaoidwjowiajdoiawdoiajwdioajwoidoid
 ```
 
-#### The `yourEncodedURL` is the base64 encoded version of the final url.
+#### The `data` is the encoded version of the destination url.
 
 🔹 The worker validates the referrer, decodes the URL, and redirects users accordingly.
 
 ### ❗ Important Notes
-- If a request comes from an unapproved referrer, the user is redirected back to a safe base URL.
+- If a request comes from an unapproved referrer, the user is shown an anti-bypass message.
 
 ---
 
