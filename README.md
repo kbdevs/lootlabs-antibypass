@@ -1,4 +1,4 @@
-# LootLabs Anti-Bypass Project
+# LootLabs Anti-Bypass
 ###### From the creator of https://lootlabs.pages.dev.
 
 > TL;DR: This project blocks all attempts to bypass LootLabs content lockers through a secure Cloudflare Workers implementation.
