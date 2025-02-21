@@ -125,9 +125,9 @@ const create404Page = `
 </html>
 `;
 
-// Simple logging helper - just increments counters
-async function incrementCounter(type, target = null) {
-  const key = target ? `${type}_${target}` : type;
+// Simple logging helper - only increments target-specific counters
+async function incrementCounter(type, target) {
+  const key = `${type}_${target}`;
   const currentCount = await requests_counts.get(key) || '0';
   await requests_counts.put(key, (parseInt(currentCount) + 1).toString());
 }
@@ -154,7 +154,6 @@ function handleRequest(request, event) {
   const targetKey = url.searchParams.get("url");
 
   if (targetKey && !mode) {
-    event.waitUntil(incrementCounter('initial_requests'));
     event.waitUntil(incrementCounter('initial_requests', targetKey));
   }
 
@@ -172,23 +171,23 @@ async function handleRedirect(request, event) {
   }
   
   const randomToken = (Math.random() + 1).toString(36).substring(7);
-  // Build modified URL without data param
   const { url: baseUrl, link: redirectBase } = ENCODED_URLS[targetKey];
   const modifiedUrl = `${CONFIG.api.baseUrl}?mode=check&antibypass=${randomToken}&return=${targetKey}`;
-  // Use destination_url from ENCODED_URLS
   const destinationUrl = ENCODED_URLS[targetKey].destination_url;
   
-  // Retain lootlabs API call
   const lootlabsParams = new URLSearchParams({
     destination_url: modifiedUrl,
     api_token: CONFIG.api.key
   });
-  // console.log(modifiedUrl);
-  
-  // Return a streaming response with lootlabs API processing, but finalRedirect remains destinationUrl.
+
+  const apiPromise = fetch(`https://be.lootlabs.gg/api/lootlabs/url_encryptor?${lootlabsParams}`)
+    .then(response => response.json())
+    .catch(() => null);
+
+  const encoder = new TextEncoder();
   const stream = new ReadableStream({
     async start(controller) {
-      controller.enqueue(new TextEncoder().encode(`
+      controller.enqueue(encoder.encode(`
 <!DOCTYPE html>
 <html>
   <head>
@@ -213,21 +212,14 @@ async function handleRedirect(request, event) {
   <body>
     <p>Please wait while we process your request...</p>
 `));
-      let finalRedirect = destinationUrl;
-      try {
-        const response = await fetch(`https://be.lootlabs.gg/api/lootlabs/url_encryptor?${lootlabsParams}`);
-        const result = await response.json();
-        if (response.ok && result.message) {
-          finalRedirect = `${redirectBase}&data=${result.message}`;
-        }
-      } catch (e) {
-        // If API call fails, default to destinationUrl.
-      }
-      controller.enqueue(new TextEncoder().encode(`
+
+      const result = await apiPromise;
+      const finalRedirect = result?.message ? 
+        `${redirectBase}&data=${result.message}` : 
+        destinationUrl;
+      controller.enqueue(encoder.encode(`
     <script>
-      setTimeout(function() {
-        window.location.href = "${finalRedirect}";
-      }, 0);
+      window.location.href = "${finalRedirect}";
     </script>
   </body>
 </html>
@@ -235,14 +227,17 @@ async function handleRedirect(request, event) {
       controller.close();
     }
   });
-  return new Response(stream, { headers: { 'Content-Type': 'text/html' } });
+
+  return new Response(stream, { 
+    headers: { 'Content-Type': 'text/html' }
+  });
 }
 
 async function handleBypassCheck(request, event) {
   const url = new URL(request.url);
   const returnPath = url.searchParams.get("return") || 'home';
   
-  const destination = ENCODED_URLS[returnPath] ? ENCODED_URLS[returnPath].destination_url : CONFIG.api.defaultRedirect;
+  const destination = ENCODED_URLS[returnPath]?.destination_url || CONFIG.api.defaultRedirect;
   const safeRedirect = `${CONFIG.api.baseUrl}?url=${returnPath}`;
   
   const referer = request.headers.get('Referer') || '';
@@ -251,7 +246,6 @@ async function handleBypassCheck(request, event) {
   const isAllowedReferrer = ALLOWED_REFERRERS.some(allowed => referer.startsWith(allowed));
   
   if (hasAntibypass && !isDenied && isAllowedReferrer) {
-    event.waitUntil(incrementCounter('success'));
     event.waitUntil(incrementCounter('success', returnPath));
     return Response.redirect(destination, 302);
   } else if (isDenied) {
@@ -260,9 +254,8 @@ async function handleBypassCheck(request, event) {
     });
   }
   
-  // Log bypass attempt with specific reason
+  // Log bypass attempt
   if (!isAllowedReferrer) {
-    event.waitUntil(incrementCounter('bypass_bad_referrer'));
     event.waitUntil(incrementCounter('bypass_bad_referrer', returnPath));
   }
 
@@ -291,20 +284,34 @@ async function handleAnalytics(request, event) {
   try {
     const list = await requests_counts.list();
     const counters = {
-      initial_requests: await requests_counts.get('initial_requests') || '0',
-      bypass_bad_referrer: await requests_counts.get('bypass_bad_referrer') || '0',
-      success: await requests_counts.get('success') || '0',
       targets: {}
     };
 
-    // Collect per-target stats
+    // Initialize totals
+    let totalInitialRequests = 0;
+    let totalBypassBadReferrer = 0;
+    let totalSuccess = 0;
+
+    // Collect per-target stats and calculate totals
     for (const key of Object.keys(CONFIG.urls)) {
-      counters.targets[key] = {
+      const targetStats = {
         initial_requests: await requests_counts.get(`initial_requests_${key}`) || '0',
         bypass_bad_referrer: await requests_counts.get(`bypass_bad_referrer_${key}`) || '0',
         success: await requests_counts.get(`success_${key}`) || '0'
       };
+      
+      counters.targets[key] = targetStats;
+      
+      // Add to totals
+      totalInitialRequests += parseInt(targetStats.initial_requests);
+      totalBypassBadReferrer += parseInt(targetStats.bypass_bad_referrer);
+      totalSuccess += parseInt(targetStats.success);
     }
+
+    // Add totals to counters object
+    counters.initial_requests = totalInitialRequests.toString();
+    counters.bypass_bad_referrer = totalBypassBadReferrer.toString();
+    counters.success = totalSuccess.toString();
 
     if (url.searchParams.get("json") === "1") {
       return new Response(JSON.stringify(counters), {
