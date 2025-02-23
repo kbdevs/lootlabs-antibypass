@@ -25,8 +25,10 @@ const CONFIG = {
     // allowed referrers
     allowedReferrers: ['https://lootdest.org', 'https://loot-link.com'],
     // analytics password
-    analyticsPassword: "the password for the analytics page"
+    analyticsPassword: "the password for the analytics page",
     // baseurl/analytics?password=the password for the analytics page
+    analyticsEnabled: true
+    // toggle for analytics features
   }
 };
 
@@ -125,8 +127,9 @@ const create404Page = `
 </html>
 `;
 
-// Simple logging helper - only increments target-specific counters
+// Modified incrementCounter function
 async function incrementCounter(type, target) {
+  if (!CONFIG.security.analyticsEnabled) return; // Skip if analytics disabled
   const key = `${type}_${target}`;
   const currentCount = await requests_counts.get(key) || '0';
   await requests_counts.put(key, (parseInt(currentCount) + 1).toString());
@@ -139,6 +142,12 @@ addEventListener('fetch', event => {
 
 function handleRequest(request, event) {
   const url = new URL(request.url);
+
+  // Return early for analytics endpoints if disabled
+  if (!CONFIG.security.analyticsEnabled && 
+      url.origin + url.pathname === CONFIG.api.baseUrl + "/analytics") {
+    return new Response("Analytics are disabled", { status: 404 });
+  }
 
   if (url.origin + url.pathname === CONFIG.api.baseUrl + "/analytics") {
     return handleAnalytics(request, event);
@@ -265,6 +274,10 @@ async function handleBypassCheck(request, event) {
 }
 
 async function handleAnalytics(request, event) {
+  if (!CONFIG.security.analyticsEnabled) {
+    return new Response("Analytics are disabled", { status: 404 });
+  }
+
   const url = new URL(request.url);
   const password = url.searchParams.get("password");
 
