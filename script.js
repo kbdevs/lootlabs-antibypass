@@ -23,7 +23,7 @@ const CONFIG = {
   // Security configuration
   security: { 
     // allowed referrers
-    allowedReferrers: ['https://lootdest.org', 'https://loot-link.com'],
+    allowedReferrers: ["https://lootdest.org/", "https://loot-dest.org/", "https://lootlabs.gg/", "https://loot-link.com/", "https://lootdest.com/"],
     // analytics password
     analyticsPassword: "the password for the analytics page",
     // baseurl/analytics?password=the password for the analytics page
