@@ -8,6 +8,7 @@ const CONFIG = {
     // https://website.com/?url=example
     // add more urls here
     // you should make the lootlabs url point to the 404 page at /404 so that the bypass is blocked if they try to bypass the api 
+    // example: https://worker.dev/404?url=example
   },
 
   // API and URL configuration
@@ -154,7 +155,13 @@ function handleRequest(request, event) {
   }
 
   if (url.origin + url.pathname === CONFIG.api.baseUrl + "/404") {
-    return new Response(create404Page, {
+    // return new Response(create404Page, {
+    //   headers: { 'Content-Type': 'text/html' }
+    // });
+    const returnPath = url.searchParams.get("url") || 'home';
+    const safeRedirect = `${CONFIG.api.baseUrl}?url=${returnPath}`;
+
+    return new Response(createErrorPage(safeRedirect), {
       headers: { 'Content-Type': 'text/html' }
     });
   }
