@@ -191,64 +191,64 @@ function handleRequest(request, event) {
 }
 
 function getAesKeyBytes(key) {
-    // Ensure key is 32 bytes (256 bits) for AES-256-GCM
-    const encoder = new TextEncoder();
-    let keyBytes = encoder.encode(key);
-    if (keyBytes.length < 32) {
-        // Pad with zeros if too short
-        let padded = new Uint8Array(32);
-        padded.set(keyBytes);
-        keyBytes = padded;
-    } else if (keyBytes.length > 32) {
-        // Truncate if too long
-        keyBytes = keyBytes.slice(0, 32);
-    }
-    return keyBytes;
+	// Ensure key is 32 bytes (256 bits) for AES-256-GCM
+	const encoder = new TextEncoder();
+	let keyBytes = encoder.encode(key);
+	if (keyBytes.length < 32) {
+		// Pad with zeros if too short
+		let padded = new Uint8Array(32);
+		padded.set(keyBytes);
+		keyBytes = padded;
+	} else if (keyBytes.length > 32) {
+		// Truncate if too long
+		keyBytes = keyBytes.slice(0, 32);
+	}
+	return keyBytes;
 }
 
 async function encryptString(str, key) {
-    const encoder = new TextEncoder();
-    const iv = crypto.getRandomValues(new Uint8Array(12));
-    const keyBytes = getAesKeyBytes(key);
-    const cryptoKey = await crypto.subtle.importKey(
-        "raw",
-        keyBytes,
-        "AES-GCM",
-        false,
-        ["encrypt"]
-    );
-    const encrypted = await crypto.subtle.encrypt(
-        { name: "AES-GCM", iv },
-        cryptoKey,
-        encoder.encode(str)
-    );
-    // Combine IV and encrypted data, then base64 encode
-    const combined = new Uint8Array(iv.length + encrypted.byteLength);
-    combined.set(iv, 0);
-    combined.set(new Uint8Array(encrypted), iv.length);
-    return btoa(String.fromCharCode(...combined));
+	const encoder = new TextEncoder();
+	const iv = crypto.getRandomValues(new Uint8Array(12));
+	const keyBytes = getAesKeyBytes(key);
+	const cryptoKey = await crypto.subtle.importKey(
+		"raw",
+		keyBytes,
+		"AES-GCM",
+		false,
+		["encrypt"]
+	);
+	const encrypted = await crypto.subtle.encrypt(
+		{ name: "AES-GCM", iv },
+		cryptoKey,
+		encoder.encode(str)
+	);
+	// Combine IV and encrypted data, then base64 encode
+	const combined = new Uint8Array(iv.length + encrypted.byteLength);
+	combined.set(iv, 0);
+	combined.set(new Uint8Array(encrypted), iv.length);
+	return btoa(String.fromCharCode(...combined));
 }
 
 async function decryptString(encryptedStr, key) {
-    const data = Uint8Array.from(atob(encryptedStr), c => c.charCodeAt(0));
-    const iv = data.slice(0, 12);
-    const encrypted = data.slice(12);
-    const encoder = new TextEncoder();
-    const decoder = new TextDecoder();
-    const keyBytes = getAesKeyBytes(key);
-    const cryptoKey = await crypto.subtle.importKey(
-        "raw",
-        keyBytes,
-        "AES-GCM",
-        false,
-        ["decrypt"]
-    );
-    const decrypted = await crypto.subtle.decrypt(
-        { name: "AES-GCM", iv },
-        cryptoKey,
-        encrypted
-    );
-    return decoder.decode(decrypted);
+	const data = Uint8Array.from(atob(encryptedStr), (c) => c.charCodeAt(0));
+	const iv = data.slice(0, 12);
+	const encrypted = data.slice(12);
+	const encoder = new TextEncoder();
+	const decoder = new TextDecoder();
+	const keyBytes = getAesKeyBytes(key);
+	const cryptoKey = await crypto.subtle.importKey(
+		"raw",
+		keyBytes,
+		"AES-GCM",
+		false,
+		["decrypt"]
+	);
+	const decrypted = await crypto.subtle.decrypt(
+		{ name: "AES-GCM", iv },
+		cryptoKey,
+		encrypted
+	);
+	return decoder.decode(decrypted);
 }
 
 async function handleRedirect(request, event) {
@@ -257,14 +257,31 @@ async function handleRedirect(request, event) {
 	if (!targetKey || !ENCODED_URLS[targetKey]) {
 		return Response.redirect(CONFIG.api.defaultRedirect, 302);
 	}
+  const redirectBase = ENCODED_URLS[targetKey].link;
 
+	// Time token (unchanged)
 	const currentTimestamp = Math.floor(Date.now() / 1000);
 	const timeToken = await encryptString(
 		currentTimestamp.toString(),
 		CONFIG.security.encryptionKey
 	);
-	const { url: baseUrl, link: redirectBase } = ENCODED_URLS[targetKey];
-	const modifiedUrl = `${CONFIG.api.baseUrl}?mode=check&antibypass=${timeToken}&return=${targetKey}`;
+
+	// New: IP token
+	// Cloudflare exposes the client IP in cf-connecting-ip; fallback to x-forwarded-for
+	const clientIp =
+		request.headers.get("cf-connecting-ip") ||
+		request.headers.get("x-forwarded-for") ||
+		"0.0.0.0";
+	const ipToken = await encryptString(clientIp, CONFIG.security.encryptionKey);
+
+	// Build your check-URL with both tokens
+	const modifiedUrl =
+		`${CONFIG.api.baseUrl}` +
+		`?mode=check` +
+		`&time=${encodeURIComponent(timeToken)}` +
+		`&ip=${encodeURIComponent(ipToken)}` +
+		`&return=${targetKey}`;
+
 	const destinationUrl = ENCODED_URLS[targetKey].destination_url;
 
 	const lootlabsParams = new URLSearchParams({
@@ -272,6 +289,7 @@ async function handleRedirect(request, event) {
 		api_token: CONFIG.api.key,
 	});
 
+    console.log("waiting for lootlabs api");
 	const apiPromise = fetch(
 		`https://be.lootlabs.gg/api/lootlabs/url_encryptor?${lootlabsParams}`
 	)
@@ -334,53 +352,60 @@ async function handleRedirect(request, event) {
 async function handleBypassCheck(request, event) {
 	const url = new URL(request.url);
 	const returnPath = url.searchParams.get("return") || "home";
-
 	const destination =
 		ENCODED_URLS[returnPath]?.destination_url || CONFIG.api.defaultRedirect;
 	const safeRedirect = `${CONFIG.api.baseUrl}?url=${returnPath}`;
-
 	const referer = request.headers.get("Referer") || "";
-	const hasAntibypass = url.searchParams.get("antibypass");
-	const isDenied = url.searchParams.get("denied");
-	const isAllowedReferrer = ALLOWED_REFERRERS.some((allowed) =>
-		referer.startsWith(allowed)
-	);
-	const URLtokenTimestamp = await decryptString(
-		hasAntibypass,
-		CONFIG.security.encryptionKey
-	);
+
+	// Decrypt the time token (existing)
+	const timeEnc = url.searchParams.get("time");
+	let urlTokenTimestamp = null;
+	if (timeEnc) {
+		urlTokenTimestamp = await decryptString(
+			timeEnc,
+			CONFIG.security.encryptionKey
+		);
+	}
+
+	// 🖧 Decrypt the IP token
+	const ipEnc = url.searchParams.get("ip");
+	let urlTokenIp = null;
+	if (ipEnc) {
+		urlTokenIp = await decryptString(ipEnc, CONFIG.security.encryptionKey);
+	}
+
+	// Re-obtain the client IP
+	const clientIp =
+		request.headers.get("cf-connecting-ip") ||
+		request.headers.get("x-forwarded-for") ||
+		"";
+
+	// Validate time window (as you already do)…
 	const currentTimestamp = Math.floor(Date.now() / 1000);
 	let isTimestampValid = false;
-
-	if (URLtokenTimestamp) {
-		const diffSeconds = currentTimestamp - URLtokenTimestamp;
-		const maxAgeSeconds = 15 * 60; // 15 minutes
-		const minAgeSeconds = 60; // 60 seconds (1 minute)
-
-		if (diffSeconds >= minAgeSeconds && diffSeconds <= maxAgeSeconds) {
-			isTimestampValid = true; // Timestamp is valid
-		} else {
-			// Timestamp is outside the allowed range (too old or too recent/future)
-			event.waitUntil(incrementCounter("bypass_bad_referrer", returnPath));
-			// console.log(`Bypass attempt detected: Timestamp out of range (${diffSeconds}s). Allowed: [${minAgeSeconds}s, ${maxAgeSeconds}s] for path ${returnPath}`);
+	if (urlTokenTimestamp) {
+		const diffSeconds = currentTimestamp - Number(urlTokenTimestamp);
+		if (diffSeconds >= 60 && diffSeconds <= 30 * 60) {
+			isTimestampValid = true;
 		}
 	}
 
-	if (hasAntibypass && !isDenied && isAllowedReferrer && isTimestampValid) {
+	// Validate IP match
+	const isIpValid = urlTokenIp === clientIp;
+
+	// Allowed referrer check (unchanged)
+	const isAllowedReferrer = ALLOWED_REFERRERS.some((allowed) =>
+		referer.startsWith(allowed)
+	);
+
+	// Only allow if all three are true
+	if (isAllowedReferrer && isTimestampValid && isIpValid) {
 		event.waitUntil(incrementCounter("success", returnPath));
 		return Response.redirect(destination, 302);
-	} 
-
-	// Log bypass attempt
-	if (!isAllowedReferrer) {
-		// console.log(`Bypass attempt detected: Invalid referrer "${referer}" for path ${returnPath}`);
-		event.waitUntil(incrementCounter("bypass_bad_referrer", returnPath));
 	}
-	// } else if (!hasAntibypass) {
-	//   // console.log(`Bypass attempt detected: Missing antibypass parameter for path ${returnPath}`);
-	//   event.waitUntil(incrementCounter('bypass_bad_referrer', returnPath));
-	// }
 
+	// Otherwise, block
+	event.waitUntil(incrementCounter("bypass_bad_referrer", returnPath));
 	return new Response(createErrorPage(safeRedirect), {
 		headers: { "Content-Type": "text/html" },
 	});
