@@ -1,36 +1,46 @@
 // Main configuration object
 const CONFIG = {
-  // Custom URLs configuration
-  urls: {
-    // custom urls for the api  
-    url: { destination_url: "where you want it to go", lootlabs_url: "the lootlabs base url" },
-    example: { destination_url: "https://google.com", lootlabs_url: "https://loot-link.com/s?56ade65" }
-    // https://website.com/?url=example
-    // add more urls here
-    // you should make the lootlabs url point to the 404 page at /404 so that the bypass is blocked if they try to bypass the api 
-    // example: https://worker.dev/404?url=example
-  },
+	// Custom URLs configuration
+	urls: {
+		// custom urls for the api
+		example: {
+			destination_url: "https://content.com",
+			lootlabs_url: "https://lootdest.org/s?hUSRBMP",
+		}
+    // this would be https://worker.url/?url=example
+		// add more urls here
+		// you should make the lootlabs url point to the 404 page at /404 so that the bypass is blocked if they try to bypass the api
+		// example: https://worker.dev/404?url=example
+	},
 
-  // API and URL configuration
-  api: {
-    // lootlabs api key 
-    key: "lootlabs api key",
-    // base url for the api
-    baseUrl: "the url of the worker",
-    // default redirect url
-    defaultRedirect: "the url you want it to go to if the api fails"
-  },
+	// API and URL configuration
+	api: {
+		// lootlabs api key
+		key: "",
+		// base url for the api
+		baseUrl: "",
+    // where the api is, its domain/url, ex. https://example.com/lootlabs
+		// default redirect url
+		defaultRedirect: "https://google.com",
+	},
 
-  // Security configuration
-  security: { 
-    // allowed referrers
-    allowedReferrers: ["https://ndenthaitingsho.org", "https://lootdest.org/", "https://loot-dest.org/", "https://lootlabs.gg/", "https://loot-link.com/", "https://lootdest.com/"],
-    // analytics password
-    analyticsPassword: "the password for the analytics page",
-    // baseurl/analytics?password=the password for the analytics page
-    analyticsEnabled: true
-    // toggle for analytics features
-  }
+	// Security configuration
+	security: {
+		// allowed referrers
+		allowedReferrers: [
+			"https://lootdest.org/",
+			"https://loot-dest.org/",
+			"https://lootlabs.gg/",
+			"https://loot-link.com/",
+			"https://lootdest.com/",
+		],
+		// analytics password
+		analyticsPassword: "password",
+		// toggle for analytics features
+		analyticsEnabled: true,
+		// .../analytics?password=aimr2025!ai
+		encryptionKey: "encrypt",
+	},
 };
 
 // in lootlabs make all of your links point to the 404 page at /404
@@ -41,11 +51,11 @@ const ANALYTICS_PASSWORD = CONFIG.security.analyticsPassword;
 // Pre-encode URLs (modified: remove data param and store destination_url)
 const ENCODED_URLS = {};
 for (const [key, value] of Object.entries(CONFIG.urls)) {
-  ENCODED_URLS[key] = {
-    url: `${CONFIG.api.baseUrl}?mode=check`,
-    link: value.lootlabs_url,
-    destination_url: value.destination_url
-  };
+	ENCODED_URLS[key] = {
+		url: `${CONFIG.api.baseUrl}?mode=check`,
+		link: value.lootlabs_url,
+		destination_url: value.destination_url,
+	};
 }
 
 // Error page template
@@ -130,80 +140,149 @@ const create404Page = `
 
 // Modified incrementCounter function
 async function incrementCounter(type, target) {
-  if (!CONFIG.security.analyticsEnabled) return; // Skip if analytics disabled
-  const key = `${type}_${target}`;
-  const currentCount = await requests_counts.get(key) || '0';
-  await requests_counts.put(key, (parseInt(currentCount) + 1).toString());
+	if (!CONFIG.security.analyticsEnabled) return; // Skip if analytics disabled
+	const key = `${type}_${target}`;
+	const currentCount = (await requests_counts.get(key)) || "0";
+	await requests_counts.put(key, (parseInt(currentCount) + 1).toString());
 }
 
-
-addEventListener('fetch', event => {
-  event.respondWith(handleRequest(event.request, event));
+addEventListener("fetch", (event) => {
+	event.respondWith(handleRequest(event.request, event));
 });
 
 function handleRequest(request, event) {
-  const url = new URL(request.url);
+	const url = new URL(request.url);
 
-  // Return early for analytics endpoints if disabled
-  if (!CONFIG.security.analyticsEnabled && 
-      url.origin + url.pathname === CONFIG.api.baseUrl + "/analytics") {
-    return new Response("Analytics are disabled", { status: 404 });
-  }
+	// Return early for analytics endpoints if disabled
+	if (
+		!CONFIG.security.analyticsEnabled &&
+		url.origin + url.pathname === CONFIG.api.baseUrl + "/analytics"
+	) {
+		return new Response("Analytics are disabled", { status: 404 });
+	}
 
-  if (url.origin + url.pathname === CONFIG.api.baseUrl + "/analytics") {
-    return handleAnalytics(request, event);
-  }
+	if (url.origin + url.pathname === CONFIG.api.baseUrl + "/analytics") {
+		return handleAnalytics(request, event);
+	}
 
-  if (url.origin + url.pathname === CONFIG.api.baseUrl + "/404") {
-    // return new Response(create404Page, {
-    //   headers: { 'Content-Type': 'text/html' }
-    // });
-    const returnPath = url.searchParams.get("url") || 'home';
-    const safeRedirect = `${CONFIG.api.baseUrl}?url=${returnPath}`;
+	if (url.origin + url.pathname === CONFIG.api.baseUrl + "/404") {
+		// return new Response(create404Page, {
+		//   headers: { 'Content-Type': 'text/html' }
+		// });
+		const returnPath = url.searchParams.get("url") || "home";
+		const safeRedirect = `${CONFIG.api.baseUrl}?url=${returnPath}`;
 
-    return new Response(createErrorPage(safeRedirect), {
-      headers: { 'Content-Type': 'text/html' }
-    });
-  }
+		return new Response(createErrorPage(safeRedirect), {
+			headers: { "Content-Type": "text/html" },
+		});
+	}
 
-  const mode = url.searchParams.get("mode");
-  const targetKey = url.searchParams.get("url");
+	const mode = url.searchParams.get("mode");
+	const targetKey = url.searchParams.get("url");
 
-  if (targetKey && !mode) {
-    event.waitUntil(incrementCounter('initial_requests', targetKey));
-  }
+	if (targetKey && !mode) {
+		event.waitUntil(incrementCounter("initial_requests", targetKey));
+	}
 
-  if (mode === "check") {
-    return handleBypassCheck(request, event);
-  }
-  return handleRedirect(request, event);
+	if (mode === "check") {
+		return handleBypassCheck(request, event);
+	}
+	return handleRedirect(request, event);
+}
+
+function getAesKeyBytes(key) {
+    // Ensure key is 32 bytes (256 bits) for AES-256-GCM
+    const encoder = new TextEncoder();
+    let keyBytes = encoder.encode(key);
+    if (keyBytes.length < 32) {
+        // Pad with zeros if too short
+        let padded = new Uint8Array(32);
+        padded.set(keyBytes);
+        keyBytes = padded;
+    } else if (keyBytes.length > 32) {
+        // Truncate if too long
+        keyBytes = keyBytes.slice(0, 32);
+    }
+    return keyBytes;
+}
+
+async function encryptString(str, key) {
+    const encoder = new TextEncoder();
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const keyBytes = getAesKeyBytes(key);
+    const cryptoKey = await crypto.subtle.importKey(
+        "raw",
+        keyBytes,
+        "AES-GCM",
+        false,
+        ["encrypt"]
+    );
+    const encrypted = await crypto.subtle.encrypt(
+        { name: "AES-GCM", iv },
+        cryptoKey,
+        encoder.encode(str)
+    );
+    // Combine IV and encrypted data, then base64 encode
+    const combined = new Uint8Array(iv.length + encrypted.byteLength);
+    combined.set(iv, 0);
+    combined.set(new Uint8Array(encrypted), iv.length);
+    return btoa(String.fromCharCode(...combined));
+}
+
+async function decryptString(encryptedStr, key) {
+    const data = Uint8Array.from(atob(encryptedStr), c => c.charCodeAt(0));
+    const iv = data.slice(0, 12);
+    const encrypted = data.slice(12);
+    const encoder = new TextEncoder();
+    const decoder = new TextDecoder();
+    const keyBytes = getAesKeyBytes(key);
+    const cryptoKey = await crypto.subtle.importKey(
+        "raw",
+        keyBytes,
+        "AES-GCM",
+        false,
+        ["decrypt"]
+    );
+    const decrypted = await crypto.subtle.decrypt(
+        { name: "AES-GCM", iv },
+        cryptoKey,
+        encrypted
+    );
+    return decoder.decode(decrypted);
 }
 
 async function handleRedirect(request, event) {
-  const url = new URL(request.url);
-  const targetKey = url.searchParams.get("url");
-  if (!targetKey || !ENCODED_URLS[targetKey]) {
-    return Response.redirect(CONFIG.api.defaultRedirect, 302);
-  }
-  
-  const randomToken = (Math.random() + 1).toString(36).substring(7);
-  const { url: baseUrl, link: redirectBase } = ENCODED_URLS[targetKey];
-  const modifiedUrl = `${CONFIG.api.baseUrl}?mode=check&antibypass=${randomToken}&return=${targetKey}`;
-  const destinationUrl = ENCODED_URLS[targetKey].destination_url;
-  
-  const lootlabsParams = new URLSearchParams({
-    destination_url: modifiedUrl,
-    api_token: CONFIG.api.key
-  });
+	const url = new URL(request.url);
+	const targetKey = url.searchParams.get("url");
+	if (!targetKey || !ENCODED_URLS[targetKey]) {
+		return Response.redirect(CONFIG.api.defaultRedirect, 302);
+	}
 
-  const apiPromise = fetch(`https://be.lootlabs.gg/api/lootlabs/url_encryptor?${lootlabsParams}`)
-    .then(response => response.json())
-    .catch(() => null);
+	const currentTimestamp = Math.floor(Date.now() / 1000);
+	const timeToken = await encryptString(
+		currentTimestamp.toString(),
+		CONFIG.security.encryptionKey
+	);
+	const { url: baseUrl, link: redirectBase } = ENCODED_URLS[targetKey];
+	const modifiedUrl = `${CONFIG.api.baseUrl}?mode=check&antibypass=${timeToken}&return=${targetKey}`;
+	const destinationUrl = ENCODED_URLS[targetKey].destination_url;
 
-  const encoder = new TextEncoder();
-  const stream = new ReadableStream({
-    async start(controller) {
-      controller.enqueue(encoder.encode(`
+	const lootlabsParams = new URLSearchParams({
+		destination_url: modifiedUrl,
+		api_token: CONFIG.api.key,
+	});
+
+	const apiPromise = fetch(
+		`https://be.lootlabs.gg/api/lootlabs/url_encryptor?${lootlabsParams}`
+	)
+		.then((response) => response.json())
+		.catch(() => null);
+
+	const encoder = new TextEncoder();
+	const stream = new ReadableStream({
+		async start(controller) {
+			controller.enqueue(
+				encoder.encode(`
 <!DOCTYPE html>
 <html>
   <head>
@@ -227,121 +306,150 @@ async function handleRedirect(request, event) {
   </head>
   <body>
     <p>Please wait while we process your request...</p>
-`));
+`)
+			);
 
-      const result = await apiPromise;
-      const finalRedirect = result?.message ? 
-        `${redirectBase}&data=${result.message}` : 
-        destinationUrl;
-      controller.enqueue(encoder.encode(`
+			const result = await apiPromise;
+			const finalRedirect = result?.message
+				? `${redirectBase}&data=${result.message}`
+				: destinationUrl;
+			controller.enqueue(
+				encoder.encode(`
     <script>
       window.location.href = "${finalRedirect}";
     </script>
   </body>
 </html>
-`));
-      controller.close();
-    }
-  });
+`)
+			);
+			controller.close();
+		},
+	});
 
-  return new Response(stream, { 
-    headers: { 'Content-Type': 'text/html' }
-  });
+	return new Response(stream, {
+		headers: { "Content-Type": "text/html" },
+	});
 }
 
 async function handleBypassCheck(request, event) {
-  const url = new URL(request.url);
-  const returnPath = url.searchParams.get("return") || 'home';
-  
-  const destination = ENCODED_URLS[returnPath]?.destination_url || CONFIG.api.defaultRedirect;
-  const safeRedirect = `${CONFIG.api.baseUrl}?url=${returnPath}`;
-  
-  const referer = request.headers.get('Referer') || '';
-  const hasAntibypass = url.searchParams.get("antibypass");
-  const isDenied = url.searchParams.get("denied");
-  const isAllowedReferrer = ALLOWED_REFERRERS.some(allowed => referer.startsWith(allowed));
-  
-  if (hasAntibypass && !isDenied && isAllowedReferrer) {
-    event.waitUntil(incrementCounter('success', returnPath));
-    return Response.redirect(destination, 302);
-  } else if (isDenied) {
-    return new Response(createErrorPage(safeRedirect), {
-      headers: { 'Content-Type': 'text/html' }
-    });
-  }
-  
-  // Log bypass attempt
-  if (!isAllowedReferrer) {
-    event.waitUntil(incrementCounter('bypass_bad_referrer', returnPath));
-  }
+	const url = new URL(request.url);
+	const returnPath = url.searchParams.get("return") || "home";
 
-  return new Response(createErrorPage(safeRedirect), {
-    headers: { 'Content-Type': 'text/html' }
-  });
+	const destination =
+		ENCODED_URLS[returnPath]?.destination_url || CONFIG.api.defaultRedirect;
+	const safeRedirect = `${CONFIG.api.baseUrl}?url=${returnPath}`;
+
+	const referer = request.headers.get("Referer") || "";
+	const hasAntibypass = url.searchParams.get("antibypass");
+	const isDenied = url.searchParams.get("denied");
+	const isAllowedReferrer = ALLOWED_REFERRERS.some((allowed) =>
+		referer.startsWith(allowed)
+	);
+	const URLtokenTimestamp = await decryptString(
+		hasAntibypass,
+		CONFIG.security.encryptionKey
+	);
+	const currentTimestamp = Math.floor(Date.now() / 1000);
+	let isTimestampValid = false;
+
+	if (URLtokenTimestamp) {
+		const diffSeconds = currentTimestamp - URLtokenTimestamp;
+		const maxAgeSeconds = 15 * 60; // 15 minutes
+		const minAgeSeconds = 60; // 60 seconds (1 minute)
+
+		if (diffSeconds >= minAgeSeconds && diffSeconds <= maxAgeSeconds) {
+			isTimestampValid = true; // Timestamp is valid
+		} else {
+			// Timestamp is outside the allowed range (too old or too recent/future)
+			event.waitUntil(incrementCounter("bypass_bad_referrer", returnPath));
+			// console.log(`Bypass attempt detected: Timestamp out of range (${diffSeconds}s). Allowed: [${minAgeSeconds}s, ${maxAgeSeconds}s] for path ${returnPath}`);
+		}
+	}
+
+	if (hasAntibypass && !isDenied && isAllowedReferrer && isTimestampValid) {
+		event.waitUntil(incrementCounter("success", returnPath));
+		return Response.redirect(destination, 302);
+	} 
+
+	// Log bypass attempt
+	if (!isAllowedReferrer) {
+		// console.log(`Bypass attempt detected: Invalid referrer "${referer}" for path ${returnPath}`);
+		event.waitUntil(incrementCounter("bypass_bad_referrer", returnPath));
+	}
+	// } else if (!hasAntibypass) {
+	//   // console.log(`Bypass attempt detected: Missing antibypass parameter for path ${returnPath}`);
+	//   event.waitUntil(incrementCounter('bypass_bad_referrer', returnPath));
+	// }
+
+	return new Response(createErrorPage(safeRedirect), {
+		headers: { "Content-Type": "text/html" },
+	});
 }
 
 async function handleAnalytics(request, event) {
-  if (!CONFIG.security.analyticsEnabled) {
-    return new Response("Analytics are disabled", { status: 404 });
-  }
+	if (!CONFIG.security.analyticsEnabled) {
+		return new Response("Analytics are disabled", { status: 404 });
+	}
 
-  const url = new URL(request.url);
-  const password = url.searchParams.get("password");
+	const url = new URL(request.url);
+	const password = url.searchParams.get("password");
 
-  if (password !== ANALYTICS_PASSWORD) {
-    return new Response("Unauthorized", { status: 401 });
-  }
+	if (password !== ANALYTICS_PASSWORD) {
+		return new Response("Unauthorized", { status: 401 });
+	}
 
-  // Handle clear counters request
-  if (url.searchParams.get("action") === "clear") {
-    const list = await requests_counts.list();
-    await Promise.all(list.keys.map(key => requests_counts.delete(key.name)));
-    return new Response(JSON.stringify({ success: true }), {
-      headers: { "Content-Type": "application/json" }
-    });
-  }
+	// Handle clear counters request
+	if (url.searchParams.get("action") === "clear") {
+		const list = await requests_counts.list();
+		await Promise.all(list.keys.map((key) => requests_counts.delete(key.name)));
+		return new Response(JSON.stringify({ success: true }), {
+			headers: { "Content-Type": "application/json" },
+		});
+	}
 
-  try {
-    const list = await requests_counts.list();
-    const counters = {
-      targets: {}
-    };
+	try {
+		const list = await requests_counts.list();
+		const counters = {
+			targets: {},
+		};
 
-    // Initialize totals
-    let totalInitialRequests = 0;
-    let totalBypassBadReferrer = 0;
-    let totalSuccess = 0;
+		// Initialize totals
+		let totalInitialRequests = 0;
+		let totalBypassBadReferrer = 0;
+		let totalSuccess = 0;
 
-    // Collect per-target stats and calculate totals
-    for (const key of Object.keys(CONFIG.urls)) {
-      const targetStats = {
-        initial_requests: await requests_counts.get(`initial_requests_${key}`) || '0',
-        bypass_bad_referrer: await requests_counts.get(`bypass_bad_referrer_${key}`) || '0',
-        success: await requests_counts.get(`success_${key}`) || '0'
-      };
-      
-      counters.targets[key] = targetStats;
-      
-      // Add to totals
-      totalInitialRequests += parseInt(targetStats.initial_requests);
-      totalBypassBadReferrer += parseInt(targetStats.bypass_bad_referrer);
-      totalSuccess += parseInt(targetStats.success);
-    }
+		// Collect per-target stats and calculate totals
+		for (const key of Object.keys(CONFIG.urls)) {
+			const targetStats = {
+				initial_requests:
+					(await requests_counts.get(`initial_requests_${key}`)) || "0",
+				bypass_bad_referrer:
+					(await requests_counts.get(`bypass_bad_referrer_${key}`)) || "0",
+				success: (await requests_counts.get(`success_${key}`)) || "0",
+			};
 
-    // Add totals to counters object
-    counters.initial_requests = totalInitialRequests.toString();
-    counters.bypass_bad_referrer = totalBypassBadReferrer.toString();
-    counters.success = totalSuccess.toString();
+			counters.targets[key] = targetStats;
 
-    if (url.searchParams.get("json") === "1") {
-      return new Response(JSON.stringify(counters), {
-        headers: { "Content-Type": "application/json" }
-      });
-    }
-    
-    const totalBypass = parseInt(counters.bypass_bad_referrer);
-    
-    const html = `
+			// Add to totals
+			totalInitialRequests += parseInt(targetStats.initial_requests);
+			totalBypassBadReferrer += parseInt(targetStats.bypass_bad_referrer);
+			totalSuccess += parseInt(targetStats.success);
+		}
+
+		// Add totals to counters object
+		counters.initial_requests = totalInitialRequests.toString();
+		counters.bypass_bad_referrer = totalBypassBadReferrer.toString();
+		counters.success = totalSuccess.toString();
+
+		if (url.searchParams.get("json") === "1") {
+			return new Response(JSON.stringify(counters), {
+				headers: { "Content-Type": "application/json" },
+			});
+		}
+
+		const totalBypass = parseInt(counters.bypass_bad_referrer);
+
+		const html = `
     <!DOCTYPE html>
     <html>
       <head>
@@ -528,30 +636,62 @@ async function handleAnalytics(request, event) {
             <div class="stat-card">
               <h3>SUCCESS</h3>
               <div class="stat-value">${counters.success}</div>
-              <div class="stat-percentage">${((parseInt(counters.success) / parseInt(counters.initial_requests) * 100) || 0).toFixed(1)}%</div>
+              <div class="stat-percentage">${(
+								(parseInt(counters.success) /
+									parseInt(counters.initial_requests)) *
+									100 || 0
+							).toFixed(1)}%</div>
             </div>
             <div class="stat-card">
               <h3>BLOCKED</h3>
               <div class="stat-value">${totalBypass}</div>
-              <div class="stat-percentage">${((totalBypass / parseInt(counters.initial_requests) * 100) || 0).toFixed(1)}%</div>
+              <div class="stat-percentage">${(
+								(totalBypass / parseInt(counters.initial_requests)) * 100 || 0
+							).toFixed(1)}%</div>
             </div>
             <div class="stat-card">
               <h3>INCOMPLETE</h3>
-              <div class="stat-value">${parseInt(counters.initial_requests) - parseInt(counters.success) - totalBypass}</div>
-              <div class="stat-percentage">${(((parseInt(counters.initial_requests) - parseInt(counters.success) - totalBypass) / parseInt(counters.initial_requests) * 100) || 0).toFixed(1)}%</div>
+              <div class="stat-value">${
+								parseInt(counters.initial_requests) -
+								parseInt(counters.success) -
+								totalBypass
+							}</div>
+              <div class="stat-percentage">${(
+								((parseInt(counters.initial_requests) -
+									parseInt(counters.success) -
+									totalBypass) /
+									parseInt(counters.initial_requests)) *
+									100 || 0
+							).toFixed(1)}%</div>
             </div>
           </div>
           <div class="progress-bar">
-            <div class="progress-segment progress-success" style="width: ${(parseInt(counters.success) / parseInt(counters.initial_requests) * 100) || 0}%"></div>
-            <div class="progress-segment progress-bypass" style="width: ${(totalBypass / parseInt(counters.initial_requests) * 100) || 0}%"></div>
-            <div class="progress-segment progress-remaining" style="width: ${((parseInt(counters.initial_requests) - parseInt(counters.success) - totalBypass) / parseInt(counters.initial_requests) * 100) || 0}%"></div>
+            <div class="progress-segment progress-success" style="width: ${
+							(parseInt(counters.success) /
+								parseInt(counters.initial_requests)) *
+								100 || 0
+						}%"></div>
+            <div class="progress-segment progress-bypass" style="width: ${
+							(totalBypass / parseInt(counters.initial_requests)) * 100 || 0
+						}%"></div>
+            <div class="progress-segment progress-remaining" style="width: ${
+							((parseInt(counters.initial_requests) -
+								parseInt(counters.success) -
+								totalBypass) /
+								parseInt(counters.initial_requests)) *
+								100 || 0
+						}%"></div>
           </div>
         </div>
 
         <h2>Per-Target Statistics</h2>
         ${Object.entries(counters.targets)
-          .sort(([, a], [, b]) => parseInt(b.initial_requests) - parseInt(a.initial_requests))
-          .map(([target, stats]) => `
+					.sort(
+						([, a], [, b]) =>
+							parseInt(b.initial_requests) - parseInt(a.initial_requests)
+					)
+					.map(
+						([target, stats]) => `
             <div class="target-stats">
               <h3>${target}</h3>
               <div class="stats-grid">
@@ -562,26 +702,59 @@ async function handleAnalytics(request, event) {
                 <div class="stat-card">
                   <h3>SUCCESS</h3>
                   <div class="stat-value">${stats.success}</div>
-                  <div class="stat-percentage">${((parseInt(stats.success) / parseInt(stats.initial_requests) * 100) || 0).toFixed(1)}%</div>
+                  <div class="stat-percentage">${(
+										(parseInt(stats.success) /
+											parseInt(stats.initial_requests)) *
+											100 || 0
+									).toFixed(1)}%</div>
                 </div>
                 <div class="stat-card">
                   <h3>BLOCKED</h3>
                   <div class="stat-value">${stats.bypass_bad_referrer}</div>
-                  <div class="stat-percentage">${((parseInt(stats.bypass_bad_referrer) / parseInt(stats.initial_requests) * 100) || 0).toFixed(1)}%</div>
+                  <div class="stat-percentage">${(
+										(parseInt(stats.bypass_bad_referrer) /
+											parseInt(stats.initial_requests)) *
+											100 || 0
+									).toFixed(1)}%</div>
                 </div>
                 <div class="stat-card">
                   <h3>INCOMPLETE</h3>
-                  <div class="stat-value">${parseInt(stats.initial_requests) - parseInt(stats.success) - parseInt(stats.bypass_bad_referrer)}</div>
-                  <div class="stat-percentage">${(((parseInt(stats.initial_requests) - parseInt(stats.success) - parseInt(stats.bypass_bad_referrer)) / parseInt(stats.initial_requests) * 100) || 0).toFixed(1)}%</div>
+                  <div class="stat-value">${
+										parseInt(stats.initial_requests) -
+										parseInt(stats.success) -
+										parseInt(stats.bypass_bad_referrer)
+									}</div>
+                  <div class="stat-percentage">${(
+										((parseInt(stats.initial_requests) -
+											parseInt(stats.success) -
+											parseInt(stats.bypass_bad_referrer)) /
+											parseInt(stats.initial_requests)) *
+											100 || 0
+									).toFixed(1)}%</div>
                 </div>
               </div>
               <div class="progress-bar">
-                <div class="progress-segment progress-success" style="width: ${(parseInt(stats.success) / parseInt(stats.initial_requests) * 100) || 0}%"></div>
-                <div class="progress-segment progress-bypass" style="width: ${(parseInt(stats.bypass_bad_referrer) / parseInt(stats.initial_requests) * 100) || 0}%"></div>
-                <div class="progress-segment progress-remaining" style="width: ${((parseInt(stats.initial_requests) - parseInt(stats.success) - parseInt(stats.bypass_bad_referrer)) / parseInt(stats.initial_requests) * 100) || 0}%"></div>
+                <div class="progress-segment progress-success" style="width: ${
+									(parseInt(stats.success) / parseInt(stats.initial_requests)) *
+										100 || 0
+								}%"></div>
+                <div class="progress-segment progress-bypass" style="width: ${
+									(parseInt(stats.bypass_bad_referrer) /
+										parseInt(stats.initial_requests)) *
+										100 || 0
+								}%"></div>
+                <div class="progress-segment progress-remaining" style="width: ${
+									((parseInt(stats.initial_requests) -
+										parseInt(stats.success) -
+										parseInt(stats.bypass_bad_referrer)) /
+										parseInt(stats.initial_requests)) *
+										100 || 0
+								}%"></div>
               </div>
             </div>
-          `).join('')}
+          `
+					)
+					.join("")}
 
         <div class="footer">
           Made by kbdevs, creator of <a href="https://lootlabs.pages.dev" target="_blank">lootlabs.pages.dev</a>
@@ -614,8 +787,8 @@ async function handleAnalytics(request, event) {
       </body>
     </html>
     `;
-    return new Response(html, { headers: { "Content-Type": "text/html" } });
-  } catch (error) {
-    return new Response("Error fetching analytics data", { status: 500 });
-  }
+		return new Response(html, { headers: { "Content-Type": "text/html" } });
+	} catch (error) {
+		return new Response("Error fetching analytics data", { status: 500 });
+	}
 }
