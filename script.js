@@ -59,7 +59,7 @@ for (const [key, value] of Object.entries(CONFIG.urls)) {
 }
 
 // Error page template
-const createErrorPage = (redirectUrl) => `
+const createErrorPage = (redirectUrl, reason) => `
 <!DOCTYPE html>
 <html>
   <head>
@@ -87,7 +87,7 @@ const createErrorPage = (redirectUrl) => `
     </style>
   </head>
   <body>
-    <p>Do not try to bypass.</p>
+    <p>${reason}</p>
     <p>Redirecting back in <span id="countdown">5</span> seconds...</p>
     <script>
       let countdown = 5;
@@ -172,7 +172,8 @@ function handleRequest(request, event) {
 		const returnPath = url.searchParams.get("url") || "home";
 		const safeRedirect = `${CONFIG.api.baseUrl}?url=${returnPath}`;
 
-		return new Response(createErrorPage(safeRedirect), {
+        const reason = "Do not remove any parameters from the url.";
+		return new Response(createErrorPage(safeRedirect, reason), {
 			headers: { "Content-Type": "text/html" },
 		});
 	}
@@ -356,6 +357,7 @@ async function handleBypassCheck(request, event) {
 		ENCODED_URLS[returnPath]?.destination_url || CONFIG.api.defaultRedirect;
 	const safeRedirect = `${CONFIG.api.baseUrl}?url=${returnPath}`;
 	const referer = request.headers.get("Referer") || "";
+    let reason = "";
 
 	// Decrypt the time token (existing)
 	const timeEnc = url.searchParams.get("time");
@@ -387,7 +389,9 @@ async function handleBypassCheck(request, event) {
 		const diffSeconds = currentTimestamp - Number(urlTokenTimestamp);
 		if (diffSeconds >= 60 && diffSeconds <= 30 * 60) {
 			isTimestampValid = true;
-		}
+		} else {
+            reason += `You took too long or were too fast. `;
+        }
 	}
 
 	// Validate IP match
@@ -403,10 +407,15 @@ async function handleBypassCheck(request, event) {
 		event.waitUntil(incrementCounter("success", returnPath));
 		return Response.redirect(destination, 302);
 	}
+    if (!isAllowedReferrer) {
+        reason += `You didn't come from lootlabs. `;
+	} else if (!isIpValid) {
+        reason += `You switched IPs. `;
+	}
 
 	// Otherwise, block
 	event.waitUntil(incrementCounter("bypass_bad_referrer", returnPath));
-	return new Response(createErrorPage(safeRedirect), {
+	return new Response(createErrorPage(safeRedirect, reason), {
 		headers: { "Content-Type": "text/html" },
 	});
 }
