@@ -387,11 +387,13 @@ async function handleBypassCheck(request, event) {
 	let isTimestampValid = false;
 	if (urlTokenTimestamp) {
 		const diffSeconds = currentTimestamp - Number(urlTokenTimestamp);
-		if (diffSeconds >= 60 && diffSeconds <= 30 * 60) {
+		if (diffSeconds <= 60) {
+			reason += "You were too quick. ";
 			isTimestampValid = true;
-		} else {
-            reason += `You took too long or were too fast. `;
-        }
+		} else if (diffSeconds >= 30 * 60) {
+            reason += `You took too long. `;
+			isTimestampValid = true;
+      }
 	}
 
 	// Validate IP match
@@ -407,9 +409,10 @@ async function handleBypassCheck(request, event) {
 		event.waitUntil(incrementCounter("success", returnPath));
 		return Response.redirect(destination, 302);
 	}
-    if (!isAllowedReferrer) {
+  if (!isAllowedReferrer) {
         reason += `You didn't come from lootlabs. `;
-	} else if (!isIpValid) {
+	}
+  if (!isIpValid) {
         reason += `You switched IPs. `;
 	}
 
