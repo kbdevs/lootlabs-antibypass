@@ -6,6 +6,7 @@ const CONFIG = {
 		example: {
 			destination_url: "https://content.com",
 			lootlabs_url: "https://lootdest.org/s?hUSRBMP",
+			steps: 1,
 		}
     // this would be https://worker.url/?url=example
 		// add more urls here
@@ -38,10 +39,11 @@ const CONFIG = {
 		analyticsPassword: "password",
 		// toggle for analytics features
 		analyticsEnabled: true,
-		// .../analytics?password=aimr2025!ai
+		// .../analytics?password=password
 		encryptionKey: "encrypt",
 	},
 };
+
 
 // in lootlabs make all of your links point to the 404 page at /404
 
@@ -55,6 +57,7 @@ for (const [key, value] of Object.entries(CONFIG.urls)) {
 		url: `${CONFIG.api.baseUrl}?mode=check`,
 		link: value.lootlabs_url,
 		destination_url: value.destination_url,
+		steps: value.steps || 1,
 	};
 }
 
@@ -255,10 +258,13 @@ async function decryptString(encryptedStr, key) {
 async function handleRedirect(request, event) {
 	const url = new URL(request.url);
 	const targetKey = url.searchParams.get("url");
+	const currentStep = parseInt(url.searchParams.get("step")) || 1;
+
+
 	if (!targetKey || !ENCODED_URLS[targetKey]) {
 		return Response.redirect(CONFIG.api.defaultRedirect, 302);
 	}
-  const redirectBase = ENCODED_URLS[targetKey].link;
+  	const redirectBase = ENCODED_URLS[targetKey].link;
 
 	// Time token (unchanged)
 	const currentTimestamp = Math.floor(Date.now() / 1000);
@@ -280,6 +286,7 @@ async function handleRedirect(request, event) {
 		`${CONFIG.api.baseUrl}` +
 		`?mode=check` +
 		`&time=${encodeURIComponent(timeToken)}` +
+		`&level=${currentStep}` +
 		`&ip=${encodeURIComponent(ipToken)}` +
 		`&return=${targetKey}`;
 
@@ -350,9 +357,44 @@ async function handleRedirect(request, event) {
 	});
 }
 
+
+const createStepPage = (current, total, nextUrl) => `
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Step ${current} Complete</title>
+    <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+      html, body { height:100%; margin:0; display:flex; align-items:center; justify-content:center; background:#121212; color:#e0e0e0; font-family:'Lexend',sans-serif; text-align:center; padding:2rem; }
+      a, strong { color:#a855f7; }
+    </style>
+  </head>
+  <body>
+    <p>Thank you for completing step ${current} of ${total}.</p>
+	<br>
+    <p>Redirecting you to step ${current + 1} in <span id="countdown">5</span> seconds…</p>
+    <script>
+      let c = 5;
+      const iv = setInterval(() => {
+        c--;
+        document.getElementById('countdown').textContent = c;
+        if (c <= 0) {
+          clearInterval(iv);
+          window.location.href = "${nextUrl}";
+        }
+      }, 1000);
+    </script>
+  </body>
+</html>
+`;
+
 async function handleBypassCheck(request, event) {
 	const url = new URL(request.url);
 	const returnPath = url.searchParams.get("return") || "home";
+	const currentStep = parseInt(url.searchParams.get("step")) || 1;
+	const requiredSteps = ENCODED_URLS[returnPath].steps || 1;
+
 	const destination =
 		ENCODED_URLS[returnPath]?.destination_url || CONFIG.api.defaultRedirect;
 	const safeRedirect = `${CONFIG.api.baseUrl}?url=${returnPath}`;
@@ -387,13 +429,13 @@ async function handleBypassCheck(request, event) {
 	let isTimestampValid = false;
 	if (urlTokenTimestamp) {
 		const diffSeconds = currentTimestamp - Number(urlTokenTimestamp);
-		if (diffSeconds <= 60) {
+		if (diffSeconds <= 45) {
 			reason += "You were too quick. ";
-			isTimestampValid = true;
 		} else if (diffSeconds >= 30 * 60) {
             reason += `You took too long. `;
+      	} else {
 			isTimestampValid = true;
-      }
+		}
 	}
 
 	// Validate IP match
@@ -407,7 +449,16 @@ async function handleBypassCheck(request, event) {
 	// Only allow if all three are true
 	if (isAllowedReferrer && isTimestampValid && isIpValid) {
 		event.waitUntil(incrementCounter("success", returnPath));
+		if (currentStep < requiredSteps) {
+			const nextUrl = `${CONFIG.api.baseUrl}?url=${returnPath}&step=${currentStep + 1}`;
+			return new Response(
+				createStepPage(currentStep, requiredSteps, nextUrl),
+				{ headers: { "Content-Type": "text/html" } }
+			);
+		}
+			// last step → go live
 		return Response.redirect(destination, 302);
+		// return Response.redirect(destination, 302);
 	}
   if (!isAllowedReferrer) {
         reason += `You didn't come from lootlabs. `;
@@ -417,6 +468,7 @@ async function handleBypassCheck(request, event) {
 	}
 
 	// Otherwise, block
+	reason += "<br>If you continually have issues, join the discord at aimr.dev/discord.";
 	event.waitUntil(incrementCounter("bypass_bad_referrer", returnPath));
 	return new Response(createErrorPage(safeRedirect, reason), {
 		headers: { "Content-Type": "text/html" },
