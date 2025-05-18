@@ -4,11 +4,10 @@ const CONFIG = {
 	urls: {
 		// custom urls for the api
 		example: {
-			destination_url: "https://content.com",
-			lootlabs_url: "https://lootdest.org/s?hUSRBMP",
-			steps: 1,
-		}
-    // this would be https://worker.url/?url=example
+			destination_url: "where you want it to go",
+			lootlabs_url: "the lootlabs url for this item https://lootdest.org/s?WAyijdao",
+			steps: 10, // how many steps you want the user to do
+		},
 		// add more urls here
 		// you should make the lootlabs url point to the 404 page at /404 so that the bypass is blocked if they try to bypass the api
 		// example: https://worker.dev/404?url=example
@@ -19,8 +18,7 @@ const CONFIG = {
 		// lootlabs api key
 		key: "",
 		// base url for the api
-		baseUrl: "",
-    // where the api is, its domain/url, ex. https://example.com/lootlabs
+		baseUrl: "https://worker.dev/",
 		// default redirect url
 		defaultRedirect: "https://google.com",
 	},
@@ -38,12 +36,14 @@ const CONFIG = {
 		// analytics password
 		analyticsPassword: "password",
 		// toggle for analytics features
-		analyticsEnabled: true,
+		analyticsEnabled: false,
 		// .../analytics?password=password
 		encryptionKey: "encrypt",
+
+		discordWebhookEnabled: false,
+		discordWebhook: "",
 	},
 };
-
 
 // in lootlabs make all of your links point to the 404 page at /404
 
@@ -61,93 +61,139 @@ for (const [key, value] of Object.entries(CONFIG.urls)) {
 	};
 }
 
-// Error page template
-const createErrorPage = (redirectUrl, reason) => `
-<!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="UTF-8">
-    <title>Access Denied</title>
-    <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;700&display=swap" rel="stylesheet">
-    <style>
-      html, body { height: 100%; margin: 0; padding: 0; }
-      body {
-        background-color: #121212;
-        color: #e0e0e0;
-        font-family: 'Lexend', sans-serif;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        min-height: 100vh;
-        text-align: center;
-        padding: 2rem;
-        box-sizing: border-box;
-      }
-      a, strong { color: #a855f7; }
-      p { margin: 8px 0; }
 
-    </style>
+
+
+function renderPage({ title, bodyContent, redirectJs = '' }) {
+	return `
+  <!DOCTYPE html>
+  <html>
+  <head>
+	<meta charset="UTF-8">
+	<title>${title}</title>
+	<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;700&display=swap" rel="stylesheet">
+	<style>
+	  html, body { height:100%; margin:0; padding:0; }
+	  body {
+		background:#121212; color:#e0e0e0;
+		font-family:'Lexend',sans-serif;
+		display: flex;
+		flex-direction: column;       /* <<< stack spinner + text vertically */
+		align-items: center;
+		justify-content: center;
+		gap: 1rem;                    /* <<< optional spacing */
+		text-align:center; padding:2rem; box-sizing:border-box;
+	  }
+	  .spinner {
+		border: 4px solid rgba(255,255,255,0.1);
+		border-top: 4px solid #a855f7;
+		border-radius: 50%;
+		width: 48px; height: 48px;
+		animation: spin 1s linear infinite;
+		margin: 1rem auto;
+	  }
+	  @keyframes spin { to { transform: rotate(360deg); } }
+	  a, strong { color: #a855f7; }
+	  p { margin: .5rem 0; }
+	</style>
   </head>
   <body>
-    <p>${reason}</p>
-    <p>Redirecting back in <span id="countdown">5</span> seconds...</p>
-    <script>
-      let countdown = 5;
-      const interval = setInterval(() => {
-        countdown--;
-        document.getElementById('countdown').textContent = countdown;
-        if (countdown <= 0) {
-          clearInterval(interval);
-          window.location.href = '${redirectUrl}';
-        }
-      }, 1000);
-    </script>
+	${bodyContent}
+	${redirectJs}
   </body>
-</html>
-`;
-
-// Error page template
-const create404Page = `
-<!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="UTF-8">
-    <title>Access Denied</title>
-    <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;700&display=swap" rel="stylesheet">
-    <style>
-      html, body { height: 100%; margin: 0; padding: 0; }
-      body {
-        background-color: #121212;
-        color: #e0e0e0;
-        font-family: 'Lexend', sans-serif;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        min-height: 100vh;
-        text-align: center;
-        padding: 2rem;
-        box-sizing: border-box;
-      }
-      a, strong { color: #a855f7; }
-      p { margin: 8px 0; }
-
-    </style>
-  </head>
-  <body>
-    <p>Do not try to bypass.</p>
-  </body>
-</html>
-`;
-
-// Modified incrementCounter function
-async function incrementCounter(type, target) {
-	if (!CONFIG.security.analyticsEnabled) return; // Skip if analytics disabled
-	const key = `${type}_${target}`;
-	const currentCount = (await requests_counts.get(key)) || "0";
-	await requests_counts.put(key, (parseInt(currentCount) + 1).toString());
+  </html>`;
 }
+
+const createErrorPage = (redirectUrl, reason) => {
+	const body = `
+	  <p>${reason}</p>
+	  <p>Redirecting in <span id="countdown">5</span>…</p>
+	`;
+	const redirectJs = `
+	<script>
+	  let c=5;
+	  const iv = setInterval(() => {
+		if (--c <= 0) { clearInterval(iv); window.location.href='${redirectUrl}'; }
+		document.getElementById('countdown').textContent = c;
+	  },1000);
+	</script>`;
+	return renderPage({ title: 'Access Denied', bodyContent: body, redirectJs });
+  };
+
+
+function createWaitPage({ currentStep, totalSteps }) {
+	const body = `
+		<div class="spinner"></div>
+		<p>Processing step <strong>${currentStep}</strong> of <strong>${totalSteps}</strong>…</p>
+		<noscript>
+		<p><em>JavaScript is required. <a href="#">Retry</a></em></p>
+		</noscript>
+	`;
+	// we’ll inject actual redirect logic later in the stream
+	return { htmlStart: renderPage({ title: 'Please Wait', bodyContent: body }).split('</body>')[0] };
+}
+  
+const create404Page = renderPage({
+	title: 'Access Denied',
+	bodyContent: `<p>Do not try to bypass.</p>`
+});
+
+async function incrementCounter(type, target, meta = {}) {
+  
+	if (CONFIG.security.discordWebhookEnabled) {
+		// 1) Map each counter to a title + accent color
+		  // 1) choose title + color
+		  const styles = {
+			initial_requests:    { title: "📥 Initial Request",      color: 0x95A5A6 },
+			bypass_bad_referrer: { title: "⛔ Bypass Blocked",        color: 0xE74C3C },
+			success:             { title: "✅ Successful Redirect",  color: 0x2ECC71 }
+		  };
+		  const { title, color } = styles[type] || { title: "ℹ️ Counter Hit", color: 0x95A5A6 };
+		
+		  // 3) build embed
+		  const embed = {
+			title,
+			color,
+			description: `A \`${type}\` event occurred for **${target}**.`,
+			thumbnail:  { url: CONFIG.urls[target]?.destination_url + "favicon.ico" },
+			fields: [
+			  { name: "Target Key",      value: target,           inline: true },
+			//   { name: "New Count",       value: `${newCount}`,    inline: true },
+			  { name: "Step",            value: `${meta.step||"-"}`,      inline: true },
+			//   { name: "Client IP",       value: meta.ip||"-",     inline: true },
+			  { name: "Referer",         value: meta.referer||"-",inline: false },
+			  { name: "User-Agent",      value: meta.ua||"-",      inline: false }
+			],
+			footer:    { text: "Lootlabs Analytics" },
+			timestamp: new Date().toISOString()
+		  };
+		
+		  // 4) fire webhook
+		  try {
+			await fetch(CONFIG.security.discordWebhook, {
+			  method:  "POST",
+			  headers: { "Content-Type": "application/json" },
+			  body:    JSON.stringify({
+				username:   "AIMr AI Lootlabs Logs",
+				avatar_url: "https://i.imgur.com/5DL5To2.png",
+				embeds:     [ embed ]
+			  })
+			});
+		  } catch (err) {
+			console.error("Discord webhook error:", err);
+		  }
+	}
+  
+	if (CONFIG.security.analyticsEnabled) {
+		// 4) Finally increment the KV counter
+		const key     = `${type}_${target}`;
+		const current = (await requests_counts.get(key)) || "0";
+		const next    = parseInt(current, 10) + 1;
+		await requests_counts.put(key, next.toString());
+	}
+}
+  
+  
 
 addEventListener("fetch", (event) => {
 	event.respondWith(handleRequest(event.request, event));
@@ -185,7 +231,20 @@ function handleRequest(request, event) {
 	const targetKey = url.searchParams.get("url");
 
 	if (targetKey && !mode) {
-		event.waitUntil(incrementCounter("initial_requests", targetKey));
+		const clientIp  = request.headers.get("cf-connecting-ip") || "unknown";
+		const referer   = request.headers.get("Referer") || "none";
+		const userAgent = request.headers.get("User-Agent") || "unknown";
+		const step      = url.searchParams.get("step") || "1";
+
+		event.waitUntil(
+		incrementCounter("initial_requests", targetKey, {
+			step,
+			ip:      clientIp,
+			referer,
+			ua:      userAgent
+		})
+		);
+		// event.waitUntil(incrementCounter("initial_requests", targetKey));
 	}
 
 	if (mode === "check") {
@@ -286,7 +345,7 @@ async function handleRedirect(request, event) {
 		`${CONFIG.api.baseUrl}` +
 		`?mode=check` +
 		`&time=${encodeURIComponent(timeToken)}` +
-		`&level=${currentStep}` +
+		`&step=${currentStep}` +
 		`&ip=${encodeURIComponent(ipToken)}` +
 		`&return=${targetKey}`;
 
@@ -304,90 +363,61 @@ async function handleRedirect(request, event) {
 		.then((response) => response.json())
 		.catch(() => null);
 
+	const { htmlStart } = createWaitPage({ currentStep, totalSteps: ENCODED_URLS[targetKey].steps });
 	const encoder = new TextEncoder();
 	const stream = new ReadableStream({
-		async start(controller) {
-			controller.enqueue(
-				encoder.encode(`
-<!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="UTF-8">
-    <title>Please Wait</title>
-    <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;700&display=swap" rel="stylesheet">
-    <style>
-      html, body { height: 100%; margin: 0; padding: 0; }
-      body {
-        background-color: #121212;
-        color: #e0e0e0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-family: 'Lexend', sans-serif;
-        flex-direction: column;
-        text-align: center;
-        padding: 2rem;
-      }
-    </style>
-  </head>
-  <body>
-    <p>Please wait while we process your request...</p>
-`)
-			);
-
-			const result = await apiPromise;
-			const finalRedirect = result?.message
-				? `${redirectBase}&data=${result.message}`
-				: destinationUrl;
-			controller.enqueue(
-				encoder.encode(`
-    <script>
-      window.location.href = "${finalRedirect}";
-    </script>
-  </body>
-</html>
-`)
-			);
-			controller.close();
-		},
+		async start(ctrl) {
+		ctrl.enqueue(encoder.encode(htmlStart));
+		const result = await apiPromise;
+		let finalUrl;
+		if (result?.message) {
+			finalUrl = `${redirectBase}&data=${result.message}`;
+		} else {
+			// fallback retry UI
+			const fallback = `
+			<p>Oops, something went wrong.</p>
+			<p><a href="${modifiedUrl}">Try again</a> or <a href="${destinationUrl}">skip</a>.</p>
+			`;
+			ctrl.enqueue(encoder.encode(fallback));
+			return ctrl.close();
+		}
+		// inject redirect
+		ctrl.enqueue(encoder.encode(`
+			<script> window.location.href = "${finalUrl}"; </script>
+		</body></html>`));
+		ctrl.close();
+		}
 	});
-
-	return new Response(stream, {
-		headers: { "Content-Type": "text/html" },
-	});
+	return new Response(stream, { headers: { 'Content-Type': 'text/html' } });
 }
 
 
-const createStepPage = (current, total, nextUrl) => `
-<!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="UTF-8">
-    <title>Step ${current} Complete</title>
-    <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;700&display=swap" rel="stylesheet">
-    <style>
-      html, body { height:100%; margin:0; display:flex; align-items:center; justify-content:center; background:#121212; color:#e0e0e0; font-family:'Lexend',sans-serif; text-align:center; padding:2rem; }
-      a, strong { color:#a855f7; }
-    </style>
-  </head>
-  <body>
-    <p>Thank you for completing step ${current} of ${total}.</p>
-	<br>
-    <p>Redirecting you to step ${current + 1} in <span id="countdown">5</span> seconds…</p>
-    <script>
-      let c = 5;
-      const iv = setInterval(() => {
-        c--;
-        document.getElementById('countdown').textContent = c;
-        if (c <= 0) {
-          clearInterval(iv);
-          window.location.href = "${nextUrl}";
-        }
-      }, 1000);
-    </script>
-  </body>
-</html>
-`;
+function createStepPage({ current, total, nextUrl }) {
+	const body = `
+	  <div class="spinner"></div>
+	  <p>Step <strong>${current}</strong> of <strong>${total}</strong> complete.</p>
+	  <p>Redirecting to step <strong>${current + 1}</strong> in <span id="countdown">5</span>…</p>
+	`;
+  
+	const redirectJs = `
+	<script>
+	  let c = 5;
+	  const iv = setInterval(() => {
+		c--;
+		document.getElementById('countdown').textContent = c;
+		if (c <= 0) {
+		  clearInterval(iv);
+		  window.location.href = "${nextUrl}";
+		}
+	  }, 1000);
+	</script>`;
+  
+	return renderPage({
+	  title: `Step ${current} Complete`,
+	  bodyContent: body,
+	  redirectJs
+	});
+  }
 
 async function handleBypassCheck(request, event) {
 	const url = new URL(request.url);
@@ -448,13 +478,26 @@ async function handleBypassCheck(request, event) {
 
 	// Only allow if all three are true
 	if (isAllowedReferrer && isTimestampValid && isIpValid) {
-		event.waitUntil(incrementCounter("success", returnPath));
+		const clientIp  = request.headers.get("cf-connecting-ip") || "unknown";
+		const referer   = request.headers.get("Referer") || "none";
+		const userAgent = request.headers.get("User-Agent") || "unknown";
+		const step      = url.searchParams.get("step") || "1";
+
+		event.waitUntil(
+		incrementCounter("success", returnPath, {
+			step,
+			ip:      clientIp,
+			referer,
+			ua:      userAgent
+		})
+		);
+		// event.waitUntil(incrementCounter("success", returnPath));
 		if (currentStep < requiredSteps) {
 			const nextUrl = `${CONFIG.api.baseUrl}?url=${returnPath}&step=${currentStep + 1}`;
 			return new Response(
-				createStepPage(currentStep, requiredSteps, nextUrl),
+				createStepPage({ current: currentStep, total: requiredSteps, nextUrl }),
 				{ headers: { "Content-Type": "text/html" } }
-			);
+			  );
 		}
 			// last step → go live
 		return Response.redirect(destination, 302);
@@ -469,7 +512,18 @@ async function handleBypassCheck(request, event) {
 
 	// Otherwise, block
 	reason += "<br>If you continually have issues, join the discord at aimr.dev/discord.";
-	event.waitUntil(incrementCounter("bypass_bad_referrer", returnPath));
+	const userAgent = request.headers.get("User-Agent") || "unknown";
+	const step      = url.searchParams.get("step") || "1";
+
+	event.waitUntil(
+	incrementCounter("initial_requests", returnPath, {
+		step,
+		ip:      clientIp,
+		referer,
+		ua:      userAgent
+	})
+	);
+	// event.waitUntil(incrementCounter("bypass_bad_referrer", returnPath));
 	return new Response(createErrorPage(safeRedirect, reason), {
 		headers: { "Content-Type": "text/html" },
 	});
