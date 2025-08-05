@@ -1,3 +1,7 @@
+
+> [!NOTE]
+> # Pull requests are greatly appreciated!
+
 # LootLabs Anti-Bypass 🚀
 
 Secure your LootLabs content lockers effortlessly and permanently block all bypass attempts with this powerful Cloudflare Workers solution.
