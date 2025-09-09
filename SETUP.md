@@ -44,6 +44,29 @@ If this setup feels overwhelming, I can help for just $5 in crypto. Ping me in t
 <img width="399" alt="image" src="https://github.com/user-attachments/assets/e57ec77d-365a-4f8f-a64b-58c5366c5c5f" /> <br>
 17. Click edit code and scroll to the top of script and customize it to your use.
 
+## 🔧 Enhanced Security Configuration
+
+The enhanced version includes new security options you can customize in the script:
+
+```javascript
+security: {
+  // ... existing settings ...
+  
+  // New enhanced security options:
+  suspiciousUserAgents: [
+    "python", "curl", "wget", "bot", "scraper", "spider", "crawler",
+    "headless", "phantom", "selenium", "automation", "postman", "okhttp"
+  ], // Add more bot signatures as needed
+  requiredBrowserFeatures: ["javascript", "cookies", "local-storage"],
+  fingerprintValidation: true, // Enable advanced security checks
+}
+```
+
+### Security Customization Tips:
+- **Add to `suspiciousUserAgents`** if you discover new bot signatures
+- **Set `fingerprintValidation: false`** to disable advanced checks (not recommended)
+- Keep `encryptionKey` secure and unique for maximum protection
+
 ## Note
 If you get too many requests, you may go over the cloudflare KV free tier usage, if this happens just go into the script and change the analytics toggle to false.
 

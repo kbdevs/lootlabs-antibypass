@@ -28,6 +28,13 @@ const CONFIG = {
 	  discordWebhook: "https://.....",
 	  maxTimeDiffSeconds: 30 * 60, // 30 minutes
 	  minTimeDiffSeconds: 45, // 45 seconds minimum wait
+	  // Enhanced security settings
+	  suspiciousUserAgents: [
+		"python", "curl", "wget", "bot", "scraper", "spider", "crawler",
+		"headless", "phantom", "selenium", "automation", "postman", "okhttp"
+	  ],
+	  requiredBrowserFeatures: ["javascript", "cookies", "local-storage"],
+	  fingerprintValidation: true,
 	},
   };
   
@@ -62,6 +69,12 @@ const CONFIG = {
 	static async encrypt(str, key) {
 	  const encoder = new TextEncoder();
 	  const iv = crypto.getRandomValues(new Uint8Array(12));
+	  
+	  // Add entropy: include timestamp and random padding to make reversing harder
+	  const timestamp = Date.now();
+	  const padding = crypto.getRandomValues(new Uint8Array(4));
+	  const paddedStr = `${timestamp}:${str}:${Array.from(padding).join('')}`;
+	  
 	  const keyBytes = this.getKeyBytes(key);
 	  
 	  const cryptoKey = await crypto.subtle.importKey(
@@ -69,7 +82,7 @@ const CONFIG = {
 	  );
 	  
 	  const encrypted = await crypto.subtle.encrypt(
-		{ name: "AES-GCM", iv }, cryptoKey, encoder.encode(str)
+		{ name: "AES-GCM", iv }, cryptoKey, encoder.encode(paddedStr)
 	  );
 	  
 	  const combined = new Uint8Array(iv.length + encrypted.byteLength);
@@ -93,7 +106,17 @@ const CONFIG = {
 		{ name: "AES-GCM", iv }, cryptoKey, encrypted
 	  );
 	  
-	  return new TextDecoder().decode(decrypted);
+	  const decryptedStr = new TextDecoder().decode(decrypted);
+	  
+	  // Extract original value from padded format (timestamp:value:padding)
+	  const parts = decryptedStr.split(':');
+	  if (parts.length >= 3) {
+		// Return the middle part (original value), removing timestamp and padding
+		return parts.slice(1, -1).join(':');
+	  }
+	  
+	  // Fallback for old format without padding
+	  return decryptedStr;
 	}
   }
   
@@ -298,6 +321,75 @@ const CONFIG = {
 	  
 	  return { valid: true };
 	}
+
+	// Enhanced bot detection
+	static isSuspiciousUserAgent(userAgent) {
+	  const ua = userAgent.toLowerCase();
+	  return CONFIG.security.suspiciousUserAgents.some(suspicious => 
+		ua.includes(suspicious.toLowerCase())
+	  );
+	}
+
+	// Browser fingerprint validation
+	static async validateBrowserFingerprint(request) {
+	  const userAgent = this.getUserAgent(request);
+	  
+	  // Check for common bot signatures
+	  if (this.isSuspiciousUserAgent(userAgent)) {
+		return { valid: false, reason: "Automated tool detected." };
+	  }
+
+	  // Check for missing typical browser headers
+	  const acceptHeader = request.headers.get("Accept") || "";
+	  const acceptLanguage = request.headers.get("Accept-Language") || "";
+	  const acceptEncoding = request.headers.get("Accept-Encoding") || "";
+
+	  if (!acceptHeader.includes("text/html") || 
+		  !acceptLanguage || 
+		  !acceptEncoding.includes("gzip")) {
+		return { valid: false, reason: "Invalid browser signature." };
+	  }
+
+	  // Additional checks for real browsers
+	  const cfRay = request.headers.get("CF-Ray");
+	  
+	  if (!cfRay) {
+		return { valid: false, reason: "Missing browser validation headers." };
+	  }
+
+	  return { valid: true };
+	}
+
+	// Enhanced timing analysis
+	static validateAdvancedTiming(urlTokenTimestamp, step) {
+	  if (!urlTokenTimestamp) return { valid: false, reason: "Missing timestamp." };
+	  
+	  const currentTimestamp = Math.floor(Date.now() / 1000);
+	  const diffSeconds = currentTimestamp - Number(urlTokenTimestamp);
+	  
+	  // Basic timing validation
+	  if (diffSeconds <= CONFIG.security.minTimeDiffSeconds) {
+		return { valid: false, reason: "You were too quick." };
+	  }
+	  
+	  if (diffSeconds >= CONFIG.security.maxTimeDiffSeconds) {
+		return { valid: false, reason: "You took too long." };
+	  }
+
+	  // Step-based timing validation (each step should take reasonable time)
+	  const expectedMinTimePerStep = Math.max(30, step * 15); // At least 30 seconds, +15s per step
+	  const expectedMaxTimePerStep = Math.min(600, step * 120); // Max 10 minutes, or 2 minutes per step
+
+	  if (diffSeconds < expectedMinTimePerStep) {
+		return { valid: false, reason: "Completion time too fast for steps completed." };
+	  }
+
+	  if (diffSeconds > expectedMaxTimePerStep) {
+		return { valid: false, reason: "Took too long for the number of steps." };
+	  }
+
+	  return { valid: true };
+	}
   }
   
   // ==================== ROUTE HANDLERS ====================
@@ -411,6 +503,35 @@ const CONFIG = {
 		}
 	  } else {
 		reasons.push("Missing IP token.");
+	  }
+
+	  // Enhanced security checks
+	  if (CONFIG.security.fingerprintValidation) {
+		// Honeypot check - these parameters should never exist in legitimate requests
+		const honeypotParams = ['admin', 'debug', 'test', 'bypass', 'skip', 'direct', 'hack'];
+		const foundHoneypot = honeypotParams.find(param => url.searchParams.has(param));
+		if (foundHoneypot) {
+		  reasons.push("Suspicious request detected.");
+		}
+
+		// Browser fingerprint validation
+		const fingerprintValidation = await RequestUtils.validateBrowserFingerprint(request);
+		if (!fingerprintValidation.valid) {
+		  reasons.push(fingerprintValidation.reason);
+		}
+
+		// Enhanced timing analysis (if we have the encrypted timestamp)
+		if (timeEnc) {
+		  try {
+			const urlTokenTimestamp = await CryptoUtils.decrypt(timeEnc, CONFIG.security.encryptionKey);
+			const advancedTimingValidation = RequestUtils.validateAdvancedTiming(urlTokenTimestamp, currentStep);
+			if (!advancedTimingValidation.valid) {
+			  reasons.push(advancedTimingValidation.reason);
+			}
+		  } catch {
+			// Already handled above with "Invalid timestamp token"
+		  }
+		}
 	  }
   
 	  // Log analytics
@@ -868,7 +989,19 @@ const CONFIG = {
 	const basePath = url.origin + url.pathname;
 	const mode = url.searchParams.get("mode");
 	const targetKey = url.searchParams.get("url");
-  
+	const clientIp = RequestUtils.getClientIP(request);
+
+	// Early security checks for enhanced anti-bypass
+	if (CONFIG.security.fingerprintValidation && targetKey) {
+	  // Check for suspicious user agents early
+	  const userAgent = RequestUtils.getUserAgent(request);
+	  if (RequestUtils.isSuspiciousUserAgent(userAgent)) {
+		return new Response(HTMLTemplates.error(CONFIG.api.defaultRedirect, "Automated access not allowed."), {
+		  headers: { "Content-Type": "text/html" },
+		});
+	  }
+	}
+
 	// Early return for disabled analytics
 	if (!CONFIG.security.analyticsEnabled && basePath === CONFIG.api.baseUrl + "/analytics") {
 	  return new Response("Analytics are disabled", { status: 404 });
