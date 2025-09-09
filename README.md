@@ -19,12 +19,34 @@ Prevent lost revenue and safeguard your content locker links against bypass meth
 * **Secure and Reliable:** Operates securely within Cloudflare's trusted global infrastructure.
 
 ## 🚫 Anti-bypass Methods
-* Referrer Checks (make sure they came from lootlabs)
-* Too Quick Checks (make sure they didn't use a bypass to quickly get around lootlabs)
-* Too Slow Checks (deactivate old links)
-* IP Based Checks (make sure they are the ones completing it, not some bot)
-* Lootlabs Redirect API (make the regular links do nothing, and encrypt final destination)
-* Probably some other stuff I forgot.
+* **Referrer Checks** - Validates users came from legitimate lootlabs domains
+* **Advanced Timing Analysis** - Multi-layered timing validation with step-based requirements
+* **IP Consistency Validation** - Ensures the same IP completes the entire process
+* **Browser Fingerprinting** - Detects and blocks automated tools and bots
+* **Rate Limiting** - Prevents excessive requests from single IP addresses
+* **Bot Detection** - Identifies suspicious user agents and automated access
+* **Honeypot Traps** - Hidden parameters that catch bypass attempts
+* **Enhanced Encryption** - AES-GCM with added entropy and anti-reverse engineering
+* **Multi-step Protection** - Each step requires proper completion time
+* **Session Integrity** - Comprehensive validation at each checkpoint
+* **Lootlabs Redirect API** - Encrypted final destinations with secure token exchange
+
+## 🛡️ Enhanced Security Features
+
+### New Configuration Options
+The enhanced version includes additional security settings that can be configured in the script:
+
+* `maxRequestsPerIP`: Limit requests per IP per hour (default: 10)
+* `suspiciousUserAgents`: List of bot/automation tool signatures to block
+* `fingerprintValidation`: Enable/disable advanced browser fingerprinting (default: true)
+* `requiredBrowserFeatures`: List of features real browsers must support
+
+### Anti-Bypass Improvements
+* **Multi-layered Bot Detection**: Identifies Python scripts, curl, wget, Selenium, and other automation tools
+* **Advanced Browser Validation**: Checks for proper headers, JavaScript support, and browser signatures
+* **Intelligent Rate Limiting**: Prevents spam while allowing legitimate users
+* **Honeypot Parameters**: Automatically catches bypass attempts using forbidden URL parameters
+* **Enhanced Cryptography**: Stronger encryption with additional entropy makes reverse engineering much harder
 
 ## 🚀 Quick Setup
 
