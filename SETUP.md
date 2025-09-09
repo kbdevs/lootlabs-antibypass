@@ -53,7 +53,6 @@ security: {
   // ... existing settings ...
   
   // New enhanced security options:
-  maxRequestsPerIP: 10, // Limit requests per IP per hour
   suspiciousUserAgents: [
     "python", "curl", "wget", "bot", "scraper", "spider", "crawler",
     "headless", "phantom", "selenium", "automation", "postman", "okhttp"
@@ -64,7 +63,6 @@ security: {
 ```
 
 ### Security Customization Tips:
-- **Increase `maxRequestsPerIP`** if legitimate users are getting rate limited
 - **Add to `suspiciousUserAgents`** if you discover new bot signatures
 - **Set `fingerprintValidation: false`** to disable advanced checks (not recommended)
 - Keep `encryptionKey` secure and unique for maximum protection

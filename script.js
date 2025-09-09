@@ -29,7 +29,6 @@ const CONFIG = {
 	  maxTimeDiffSeconds: 30 * 60, // 30 minutes
 	  minTimeDiffSeconds: 45, // 45 seconds minimum wait
 	  // Enhanced security settings
-	  maxRequestsPerIP: 10, // Max requests per IP per hour
 	  suspiciousUserAgents: [
 		"python", "curl", "wget", "bot", "scraper", "spider", "crawler",
 		"headless", "phantom", "selenium", "automation", "postman", "okhttp"
@@ -361,25 +360,6 @@ const CONFIG = {
 	  return { valid: true };
 	}
 
-	// Rate limiting check  
-	static async checkRateLimit(ip, env) {
-	  if (!env.requests_counts) return { allowed: true };
-	  
-	  const currentHour = Math.floor(Date.now() / (1000 * 60 * 60));
-	  const key = `ratelimit_${ip}_${currentHour}`;
-	  
-	  const currentCount = parseInt(await env.requests_counts.get(key) || "0");
-	  
-	  if (currentCount >= CONFIG.security.maxRequestsPerIP) {
-		return { allowed: false, reason: "Rate limit exceeded." };
-	  }
-
-	  // Increment counter
-	  await env.requests_counts.put(key, (currentCount + 1).toString(), { expirationTtl: 3600 });
-	  
-	  return { allowed: true };
-	}
-
 	// Enhanced timing analysis
 	static validateAdvancedTiming(urlTokenTimestamp, step) {
 	  if (!urlTokenTimestamp) return { valid: false, reason: "Missing timestamp." };
@@ -538,12 +518,6 @@ const CONFIG = {
 		const fingerprintValidation = await RequestUtils.validateBrowserFingerprint(request);
 		if (!fingerprintValidation.valid) {
 		  reasons.push(fingerprintValidation.reason);
-		}
-
-		// Rate limiting check
-		const rateLimitCheck = await RequestUtils.checkRateLimit(clientIp, { requests_counts });
-		if (!rateLimitCheck.allowed) {
-		  reasons.push(rateLimitCheck.reason);
 		}
 
 		// Enhanced timing analysis (if we have the encrypted timestamp)
@@ -1023,14 +997,6 @@ const CONFIG = {
 	  const userAgent = RequestUtils.getUserAgent(request);
 	  if (RequestUtils.isSuspiciousUserAgent(userAgent)) {
 		return new Response(HTMLTemplates.error(CONFIG.api.defaultRedirect, "Automated access not allowed."), {
-		  headers: { "Content-Type": "text/html" },
-		});
-	  }
-
-	  // Early rate limiting check
-	  const rateLimitCheck = await RequestUtils.checkRateLimit(clientIp, { requests_counts });
-	  if (!rateLimitCheck.allowed) {
-		return new Response(HTMLTemplates.error(CONFIG.api.defaultRedirect, rateLimitCheck.reason), {
 		  headers: { "Content-Type": "text/html" },
 		});
 	  }

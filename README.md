@@ -23,7 +23,6 @@ Prevent lost revenue and safeguard your content locker links against bypass meth
 * **Advanced Timing Analysis** - Multi-layered timing validation with step-based requirements
 * **IP Consistency Validation** - Ensures the same IP completes the entire process
 * **Browser Fingerprinting** - Detects and blocks automated tools and bots
-* **Rate Limiting** - Prevents excessive requests from single IP addresses
 * **Bot Detection** - Identifies suspicious user agents and automated access
 * **Honeypot Traps** - Hidden parameters that catch bypass attempts
 * **Enhanced Encryption** - AES-GCM with added entropy and anti-reverse engineering
@@ -36,7 +35,6 @@ Prevent lost revenue and safeguard your content locker links against bypass meth
 ### New Configuration Options
 The enhanced version includes additional security settings that can be configured in the script:
 
-* `maxRequestsPerIP`: Limit requests per IP per hour (default: 10)
 * `suspiciousUserAgents`: List of bot/automation tool signatures to block
 * `fingerprintValidation`: Enable/disable advanced browser fingerprinting (default: true)
 * `requiredBrowserFeatures`: List of features real browsers must support
@@ -44,7 +42,6 @@ The enhanced version includes additional security settings that can be configure
 ### Anti-Bypass Improvements
 * **Multi-layered Bot Detection**: Identifies Python scripts, curl, wget, Selenium, and other automation tools
 * **Advanced Browser Validation**: Checks for proper headers, JavaScript support, and browser signatures
-* **Intelligent Rate Limiting**: Prevents spam while allowing legitimate users
 * **Honeypot Parameters**: Automatically catches bypass attempts using forbidden URL parameters
 * **Enhanced Cryptography**: Stronger encryption with additional entropy makes reverse engineering much harder
 
